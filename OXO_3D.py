@@ -1,30 +1,7 @@
 # from typing import List
 # ADD TYPE ANNOTATIONS AT SOME POINT
 
-class Player:
-
-    def __init__(self, name, marker):
-        self.name = name
-        self.marker = marker
-        
-    @property
-    def marker(self):
-        return self.__marker
-
-    @marker.setter
-    def marker(self, value):
-        self.__marker = value # check it is single character
-
-    def __str__(self):
-        return f'''Player's name is {self.name}. Marker is '{self.marker}\''''
-
-
-    # add equality checks for Player
-
-
-
-# rename to OXO_3D
-class IIID_OXO:
+class OXO_3D:
 
     def __init__(self, p1, p2):
         # p1 and p2 are expected to be Player classes
