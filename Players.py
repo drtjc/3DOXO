@@ -1,7 +1,7 @@
 # from typing import List
 # ADD TYPE ANNOTATIONS AT SOME POINT
 
-import collections
+from collections import UserDict
 
 class Player:
 
@@ -14,5 +14,5 @@ class Player:
     # add equality checks for Player
 
 
-class Players(collections.UserDict):
+class Players(UserDict):
     pass
