@@ -1,8 +1,12 @@
 from collections import abc
+import numbers
+
+hk = {'W4': 5000, 'S4': 1000, 'W3': 500, 'S3': 200, 'W2': 100, 'S2': 50, 'W1': 20, 'S1': 5}
+hk_bad = {'W4': 5000, 'S4': 1000, 'W3': 500, 'S3': 200, 'W2': 100, 'S2': 50, 'W1': 20, 'S1': 'test'}
 
 class Settings:
 
-    HEURISITC_KEYS = {'W4', 'W3', 'W2', 'W1', 'S4', 'S3', 'S2', 'S1'}
+    HEURISITC_KEYS = frozenset(['W4', 'W3', 'W2', 'W1', 'S4', 'S3', 'S2', 'S1'])
     MAX_DEPTH = 5
 
     def __init__(self, heuristics = None, depth = None): 
@@ -23,19 +27,27 @@ class Settings:
 
     @heuristics.setter
     def heuristics(self, value):
-        # check that value is a dictionary
+        # check that heuristics is a dictionary
         if isinstance(value, abc.Mapping):
-            # value is a dictionary - check that the right keys exist
+            # check that heuristics has the right keys
             if value.keys() == Settings.HEURISITC_KEYS:
-                self._heuristics = value
+                # check that heuristics has numeric values
+                if all(isinstance(val, numbers.Real) for val in value.values()):
+                    self._heuristics = value
+                else:
+                    non_numeric_keys = {key for key, val in value.items() \
+                                        if not isinstance(val, numbers.Real)}
+                    msg = f'All heuristics values must be numeric. Keys ' \
+                          f'with non-numeric values are {non_numeric_keys}.'
+                    raise TypeError(msg)
             else:
                 missing_keys = Settings.HEURISITC_KEYS - value.keys()
                 extra_keys = value.keys() - Settings.HEURISITC_KEYS           
-                msg = f'''Heuristic keys are not same. Missing keys 
-                          are {missing_keys}. Extra keys are {extra_keys}'''
+                msg = f'heuristics keys are not same. Missing keys ' \
+                      f'are {missing_keys}. Extra keys are {extra_keys}.'
                 raise ValueError(msg)
         else:
-            raise TypeError("value should be a mapping (dictionary)")
+            raise TypeError("heuristics should be a mapping (dictionary).")
 
     @property
     def depth(self):
@@ -43,7 +55,15 @@ class Settings:
 
     @depth.setter
     def depth(self, value):
-        self._depth = max(1, min(value, Settings.MAX_DEPTH))
+        if isinstance(value, numbers.Integral):
+            if value >= 1 and value <= Settings.MAX_DEPTH:
+                self._depth = value
+            else:
+                msg = f'depth must be between 1 and {Settings.MAX_DEPTH} ' \
+                      f'inclusively.'
+                raise ValueError(msg)
+        else:
+            raise TypeError("depth must be an integer.")
 
     @property
     def is_interactive(self):
