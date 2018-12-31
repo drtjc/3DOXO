@@ -1,5 +1,7 @@
 # from typing import List
 # ADD TYPE ANNOTATIONS AT SOME POINT
+# add doc strings?
+# add custom exceptions
 
 class OXO_3D:
 
