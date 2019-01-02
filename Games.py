@@ -2,6 +2,8 @@ import numbers
 import itertools
 from collections import UserDict
 
+import Settings
+
 class Board(UserDict):
 
     # think of rows, columns and levels as x, y and z planes (in 3d graph)
@@ -97,7 +99,7 @@ class Board(UserDict):
             for r in range(1, 5):
                 for c in range(1, 5):
                     position = str(l) + str(r) + str(c)
-                    lines = {key: line for key, line in Board.LINES.items() \
+                    lines = {key: line for key, line in Board.LINES.items() 
                              if position in line}       
                     self[position] = Cell(position, lines)
 
@@ -109,10 +111,11 @@ class Board(UserDict):
     def lines_info(self, position):
         lines_info = {}
         # lines_info to contain, by intersecting line:
-        #   1. number of total cells with same value as position cell (incl. position cell).
-        #   2. max number of consecutive cells as position cell (incl. position cell).
-        #   3. If position cell is not empty, then if line contains opposite (non-empty) value.
-        #      If position cell is empty, then if line contains any non-empty values.
+        #   1. number of total cells with same value as position cell.
+        #   2. max number of consecutive cells as position cell.
+        #   3. If position cell is not empty, then if line contains 
+        #      opposite (non-empty) value. If position cell is empty,
+        #      then if line contains any non-empty values.  
         value = self[position].value
         for key, line in self[position].lines.items():
             line_values = [self[position].value == value for position in line]
@@ -122,45 +125,14 @@ class Board(UserDict):
             lines_values_X = any([self[position].value == Cell.X for position in line])
             lines_values_O = any([self[position].value == Cell.O for position in line])
             if self[position].is_O:
-                tmp = lines_values_X
+                lines_values_opp = lines_values_X
             elif self[position].is_X:
-                tmp = lines_values_O
+                lines_values_opp = lines_values_O
             else: # empty
-                tmp = lines_values_X or lines_values_O  
+                lines_values_opp = lines_values_X or lines_values_O  
             
-            lines_info[key] = [values_total, values_consec, tmp]
+            lines_info[key] = [values_total, values_consec, lines_values_opp]
         return lines_info
-
-
-
-
-    # def count_X(self, position):
-    #     r = {}
-    #     for key, line in self[position].lines.items():
-    #         line_values = [self[position].value == Cell.X for position in line]
-    #         values_total = sum(line_values)
-    #         values_consec = max(len(list(seq)) for value, seq in itertools.groupby(line_values) if value)
-
-    #         line_values_O = any([self[position].value == Cell.O for position in line])
-            
-
-    #         r[key] = [values_total, values_consec, line_values_O]
-    #         #r[key] = line_values
-    #     return r
-
-# max(len(list(seq)) for value, seq in itertools.groupby(x) if value == 'X')
-
-
-        #lines_values = {key: sum([self[position].value == Cell.X for position in line]) \
-        #                for key, line in self[position].lines.items()}
-        #return lines_values
-
-
-
-
- 
-
-
 
 
 class Cell:
@@ -221,8 +193,7 @@ class Cell:
     def is_outer_outer(self): # does not include corners
         if self.is_outer:
             # true if level = 1 or 4, row = 2 or 3, and column = 1 or 4
-            return self.level in [1, 4] and self.row in [2, 3] \
-                   and self.column in [1, 4]       
+            return self.level in [1, 4] and self.row in [2, 3] and self.column in [1, 4]       
         else:
             return False
 
@@ -247,8 +218,21 @@ class Cell:
 from pprint import pprint
    # def display_line        
 if __name__ == "__main__":
+    
+    h1 = {'W4': 5000, 'S4': 1000, 'W3': 500, 'S3': 200, 'W2': 100, 'S2': 50, 'W1': 20, 'S1': 5}
+    h2 = {'W4': 5000, 'S4': 1000, 'W3': 500, 'S3': 200, 'W2': 100, 'S2': 50, 'W1': 20, 'S1': 5}
+
+    s1 = Settings.Settings(h1, 1)
+    s2 = Settings.Settings(h1, 2)
+    
+    alls = Settings.AllSettings()
+    alls['h1'] = h1
+    alls['h2'] = h2
+
+    print(alls['h1'])
+
     b = Board()
-   # b['111'].set_as_X()
+    b['111'].set_as_X()
     print(b['111'].value)
     
     b['112'].set_as_X()
@@ -257,7 +241,7 @@ if __name__ == "__main__":
    # b['113'].set_as_O()
     print(b['113'].value)
 
-   # b['114'].set_as_X()
+    b['114'].set_as_X()
     print(b['114'].value)
 
     lv = b.lines_info('111')

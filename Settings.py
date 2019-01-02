@@ -1,8 +1,15 @@
-from collections import abc
 import numbers
+from collections import abc
+from collections import UserDict
+
 
 hk = {'W4': 5000, 'S4': 1000, 'W3': 500, 'S3': 200, 'W2': 100, 'S2': 50, 'W1': 20, 'S1': 5}
 hk_bad = {'W4': 5000, 'S4': 1000, 'W3': 500, 'S3': 200, 'W2': 100, 'S2': 50, 'W1': 20, 'S1': 'test'}
+
+
+class AllSettings(UserDict):
+    pass
+
 
 class Settings:
 
