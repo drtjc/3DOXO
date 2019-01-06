@@ -1,6 +1,7 @@
 import numbers
 import itertools
 from collections import UserDict
+from collections import namedtuple
 
 import Settings
 
@@ -93,6 +94,8 @@ class Board(UserDict):
         'line_lrc_4': ['141', '232', '323', '414']
     }
 
+    lines_values = namedtuple('lines_values', ['total', 'consec', 'total_opp', 'consec_opp'])
+
     def __init__(self):
         self.data = {}
         for l in range(1, 5):
@@ -102,37 +105,78 @@ class Board(UserDict):
                     lines = {key: line for key, line in Board.LINES.items() 
                              if position in line}       
                     self[position] = Cell(position, lines)
+   
+    # ensure all cells positions are strings
+    def __setitem__(self, position, cell):
+        self.data[str(position)] = cell
+    
+    # allow integer positions to be used; e.g. 111, which is converted to '111'.
+    def __missing__(self, position):
+        if isinstance(position, str):
+            raise KeyError(position)
+        return self[str(position)]
+
+    def __contains__(self, position):
+        return str(position) in self.data
 
     def clear(self):
         for position, _ in self.items():
             self[position].set_as_empty()
 
-
-    def lines_info(self, position):
-        lines_info = {}
+    def __lines_info(self, position):
+        # Assume cell is not empty
         # lines_info to contain, by intersecting line:
         #   1. number of total cells with same value as position cell.
-        #   2. max number of consecutive cells as position cell.
-        #   3. If position cell is not empty, then if line contains 
-        #      opposite (non-empty) value. If position cell is empty,
-        #      then if line contains any non-empty values.  
-        value = self[position].value
-        for key, line in self[position].lines.items():
-            line_values = [self[position].value == value for position in line]
-            values_total = sum(line_values)
-            values_consec = max(len(list(seq)) for value, seq in itertools.groupby(line_values) if value)
-
-            lines_values_X = any([self[position].value == Cell.X for position in line])
-            lines_values_O = any([self[position].value == Cell.O for position in line])
-            if self[position].is_O:
-                lines_values_opp = lines_values_X
-            elif self[position].is_X:
-                lines_values_opp = lines_values_O
-            else: # empty
-                lines_values_opp = lines_values_X or lines_values_O  
-            
-            lines_info[key] = [values_total, values_consec, lines_values_opp]
+        #   2. max number of consecutive cells with same value as position cell.
+        #   3. number of total cells with opposite value as position cell.
+        #   4. max number of consecutive cells with oposite value as position cell.
+        cell = self[position]
+        if cell.value == Cell.EMPTY:
+            raise ValueError("Cell cannot be empty")
+        
+        lines_info = {}
+        for key, line in cell.lines.items():
+            line_values = [self[position].value for position in line]
+            lines_info[key] = Board.lines_values(*(self.__lines_info_value(line_values, cell.value) + \
+                                                   self.__lines_info_value(line_values, cell.value_opp)))
         return lines_info
+
+    def __lines_info_value(self, line_values, value):
+        values_total = line_values.count(value)
+        values_consec = max((len(list(seq)) for val, seq in itertools.groupby(line_values) if val == value), default = 0)
+        return (values_total, values_consec)
+
+
+
+    def __score(self, position):
+        
+        score = 0
+
+        lines_info = self.__lines_info(position)
+        
+        for line_values in lines_info.values():
+            print(line_values.total_opp)
+
+            if line_values.total == 4: # win
+                score += 5000
+                ## TJC flag win for efficiency?
+            elif line_values.total_opp == 3 and line_values.total == 1: # stop opponent winning
+                score += 1000
+            elif line_values.total == 3 and line_values.total_opp == 0: # 3 in a row
+                score += 500
+            elif line_values.total_opp == 2 and line_values.total == 2: # stop 3 in a row
+                score += 200
+            elif line_values.total == 2 and line_values.total_opp == 0: # 2 in a row
+                score +=100
+            elif line_values.total_opp == 1 and line_values.total_opp == 3: # stop 2 in a row
+                score +=50
+            elif line_values.total == 1 and line_values.total_opp == 0: # 1 in a row
+                score += 20
+
+            print(score)
+
+        return score
+
 
 
 class Cell:
@@ -161,6 +205,15 @@ class Cell:
     @property
     def value(self):
         return self._value
+
+    @property
+    def value_opp(self):
+        if self.value == Cell.X:
+            return Cell.O
+        elif self.value == Cell.O:
+            return Cell.X
+        else: # cell is empty
+            return Cell.EMPTY
 
     @property
     def is_X(self):
@@ -219,8 +272,8 @@ from pprint import pprint
    # def display_line        
 if __name__ == "__main__":
     
-    h1 = {'W4': 5000, 'S4': 1000, 'W3': 500, 'S3': 200, 'W2': 100, 'S2': 50, 'W1': 20, 'S1': 5}
-    h2 = {'W4': 5000, 'S4': 1000, 'W3': 500, 'S3': 200, 'W2': 100, 'S2': 50, 'W1': 20, 'S1': 5}
+    h1 = {'W4': 5000, 'S4': 1000, 'W3': 500, 'S3': 200, 'W2': 100, 'S2': 50, 'W1': 20}
+    h2 = {'W4': 5000, 'S4': 1000, 'W3': 500, 'S3': 200, 'W2': 100, 'S2': 50, 'W1': 20}
 
     s1 = Settings.Settings(h1, 1)
     s2 = Settings.Settings(h1, 2)
@@ -233,16 +286,22 @@ if __name__ == "__main__":
 
     b = Board()
     b['111'].set_as_X()
-    print(b['111'].value)
+    #print(b[111].value)
     
     b['112'].set_as_X()
-    print(b['112'].value)
+    #print(b['112'].value)
 
-   # b['113'].set_as_O()
-    print(b['113'].value)
+    #b['113'].set_as_O()
+    #print(b['113'].value)
 
     b['114'].set_as_X()
-    print(b['114'].value)
+    #print(b['114'].value)
 
-    lv = b.lines_info('111')
-    pprint(lv)
+    #pprint(dir(b))
+    #lv = b.lines_info('111')
+    #lv = b._Board__lines_info(111)
+    #pprint(lv)
+    print(b._Board__score(111))
+
+    print(113 in b)
+    
