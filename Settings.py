@@ -2,10 +2,19 @@ import numbers
 from collections import abc
 from collections import UserDict
 
-class AllSettings(UserDict):
-    pass
+class Settings(UserDict):
+    
+    def __init__(self):
+        self.data = {}
 
-class Settings:
+    def __setitem__(self, name, setting):
+        if isinstance(setting, Setting):
+            self.data[name] = setting
+        else:
+            raise TypeError("Item must of type Setting")    
+
+
+class Setting:
 
     HEURISITC_KEYS = frozenset(['W4', 'W3', 'W2', 'W1', 'S4', 'S3', 'S2'])
     MAX_DEPTH = 5
@@ -13,7 +22,16 @@ class Settings:
     def __init__(self, heuristics = None, depth = None): 
         self.heuristics = heuristics
         self.depth = depth
-        
+
+    def __repr__(self):
+        if self.is_interactive:
+            s = "Interactive"
+        else:
+            s = "D=" + str(Setting.MAX_DEPTH) + ":"
+            for key, value in self.heuristics.items():
+                s += ":" + key + "=" + str(value)
+        return s
+
     @classmethod
     def as_interactive(cls):
         return cls()
@@ -28,10 +46,14 @@ class Settings:
 
     @heuristics.setter
     def heuristics(self, value):
+        if value is None:
+            self._heuristics = None
+            return
+
         # check that heuristics is a dictionary
         if isinstance(value, abc.Mapping):
             # check that heuristics has the right keys
-            if value.keys() == Settings.HEURISITC_KEYS:
+            if value.keys() == Setting.HEURISITC_KEYS:
                 # check that heuristics has numeric values
                 if all(isinstance(val, numbers.Real) for val in value.values()):
                     self._heuristics = value
@@ -42,8 +64,8 @@ class Settings:
                           f'with non-numeric values are {non_numeric_keys}.'
                     raise TypeError(msg)
             else:
-                missing_keys = Settings.HEURISITC_KEYS - value.keys()
-                extra_keys = value.keys() - Settings.HEURISITC_KEYS           
+                missing_keys = Setting.HEURISITC_KEYS - value.keys()
+                extra_keys = value.keys() - Setting.HEURISITC_KEYS           
                 msg = f'heuristics keys are not same. Missing keys ' \
                       f'are {missing_keys}. Extra keys are {extra_keys}.'
                 raise ValueError(msg)
@@ -56,11 +78,15 @@ class Settings:
 
     @depth.setter
     def depth(self, value):
+        if value is None:
+            self._depth = None
+            return
+
         if isinstance(value, numbers.Integral):
-            if value >= 1 and value <= Settings.MAX_DEPTH:
+            if value >= 1 and value <= Setting.MAX_DEPTH:
                 self._depth = value
             else:
-                msg = f'depth must be between 1 and {Settings.MAX_DEPTH} ' \
+                msg = f'depth must be between 1 and {Setting.MAX_DEPTH} ' \
                       f'inclusively.'
                 raise ValueError(msg)
         else:
