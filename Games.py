@@ -11,7 +11,6 @@ class Games():
     def __init__(self):
         self.games = []
 
- 
 
 class Game:
 
@@ -42,24 +41,46 @@ class Game:
             print("heuristics")
 
         # if quit then self._was quit = TRUE
-        
-        
-def underline(str):
-    s = ""
-    str2 =str#.replace(" ", chr(0x1680))
-    #for ch in str:
-    #    if ch.isspace():
-    #        #s += "t\u0332"
-    #        s = s + chr(0x00B7)
-    #    else:
-    #        s = s + ch + "\u0332"
-    #return s
 
-    return ''.join([chr + "\u0332" for chr in str2])
-    #return ''.join([ch + chr(0x035F) for ch in str2])
+    @staticmethod
+    def underline(str):
+        try:
+            return ''.join([chr + "\u0332" for chr in str])
+        except:
+            return str
 
+    def display_term(self, players = True, settings = True):
+        print(self.underline("test"))
+        vis = ""
+        for cell in self.board.cells_rlc():
+            
+            #print(cell.position, end = ' ')
 
-def prRed(skk): print("\033[91m {}\033[00m" .format(skk)) 
+            if cell.is_empty:
+                cell._value = "B"
+
+            if not cell.is_front_face:
+                #print("see")
+                vis += self.underline(cell.value)
+            else:
+                #print("hi")
+                vis += cell.value
+
+            if not cell.is_right_face:
+                #print("line")
+                vis += "|"
+            else:
+                #print("here")
+                if cell.is_bottom_face:
+                    #print("bottom)")
+                    vis += "\n"
+                else:
+                    vis += "  "
+                    #print("space")    
+
+        print(vis)
+        return
+
 
 
 if __name__ == "__main__":
@@ -77,13 +98,18 @@ if __name__ == "__main__":
     g.move()
     g.move()
 
-    print('\033[31m' + underline("X") + "|" + underline("O") + "|" + "_" + "|" + underline("X") + "\n" + \
-          underline("O") + "|" + underline("O") + "|" + "_" + "|" + "_" + "\n" + \
-          "X" + "|" + "O" + "|" + " " + "|" + "X")
+    g.board[111].set_as_X()
 
-    print("X" + "\u20E4")
-    print("X" + chr(0x20E4))
+    g.display_term()
 
-    print("\033[1;32;40m Bright Green  \n")
 
-    print(Fore.RESET + Back.RESET + underline('testy test'))
+    # print('\033[31m' + underline("X") + "|" + underline("O") + "|" + "_" + "|" + underline("X") + "\n" + \
+    #       underline("O") + "|" + underline("O") + "|" + "_" + "|" + "_" + "\n" + \
+    #       "X" + "|" + "O" + "|" + " " + "|" + "X")
+
+    # print("X" + "\u20E4")
+    # print("X" + chr(0x20E4))
+
+    # print("\033[1;32;40m Bright Green  \n")
+
+    # print(Fore.RESET + Back.RESET + underline('testy test'))

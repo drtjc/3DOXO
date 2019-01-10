@@ -3,8 +3,10 @@ import itertools
 from collections import namedtuple
 from collections import UserDict
 
-
 import Settings
+
+def underline(str):
+    return ''.join([chr + "\u0332" for chr in str])
 
 class Board(UserDict):
 
@@ -103,7 +105,7 @@ class Board(UserDict):
             for r in range(1, 5):
                 for c in range(1, 5):
                     position = str(l) + str(r) + str(c)
-                    lines = {key: line for key, line in Board.LINES.items() 
+                    lines = {key: line for key, line in self.LINES.items() 
                              if position in line}       
                     self[position] = Cell(position, lines)
    
@@ -121,12 +123,20 @@ class Board(UserDict):
         return str(position) in self.data
 
     def __repr__(self):
-
+        class_name = type(self).__name__
+        return '{}()'.format(class_name)
 
     def clear(self):
         for position, _ in self.items():
             self[position].set_as_empty()
 
+    def cells_rlc(self):
+        for r in range(1, 5):
+            for l in range(1, 5):
+                for c in range(1, 5):
+                    position = str(l) + str(r) + str(c)
+                    yield self[position]
+                    
     def __lines_info(self, position):
         # Assume cell is not empty
         # lines_info to contain, by intersecting line:
@@ -135,7 +145,7 @@ class Board(UserDict):
         #   3. number of total cells with opposite value as position cell.
         #   4. max number of consecutive cells with oposite value as position cell.
         cell = self[position]
-        if cell.value == Cell.EMPTY:
+        if cell.value.is_empty:
             raise ValueError("Cell cannot be empty")
         
         lines_info = {}
@@ -196,15 +206,15 @@ class Cell:
 
     @property
     def level(self):
-        return self.position[0]
+        return int(self.position[0])
 
     @property
     def row(self):
-        return self.position[1]
+        return int(self.position[1])
 
     @property
     def column(self):
-        return self.position[2]
+        return int(self.position[2])
 
     @property
     def value(self):
@@ -212,12 +222,12 @@ class Cell:
 
     @property
     def value_opp(self):
-        if self.value == Cell.X:
-            return Cell.O
-        elif self.value == Cell.O:
-            return Cell.X
+        if self.value == self.X:
+            return self.O
+        elif self.value == self.O:
+            return self.X
         else: # cell is empty
-            return Cell.EMPTY
+            return self.EMPTY
 
     @property
     def is_X(self):
@@ -261,14 +271,38 @@ class Cell:
         else:
             return False
 
+    @property
+    def is_left_face(self):
+        return self.column == 1
+
+    @property
+    def is_right_face(self):
+        return self.column == 4
+
+    @property
+    def is_back_face(self):
+        return self.row == 1
+
+    @property
+    def is_front_face(self):
+        return self.row == 4
+
+    @property
+    def is_top_face(self):
+        return self.level == 1
+
+    @property
+    def is_bottom_face(self):
+        return self.level == 4
+
     def set_as_X(self):
-        self._value = Cell.X
+        self._value = self.X
 
     def set_as_O(self):
-        self._value = Cell.O
+        self._value = self.O
 
     def set_as_empty(self):
-        self._value = Cell.EMPTY
+        self._value = self.EMPTY
 
 
 
@@ -282,12 +316,7 @@ if __name__ == "__main__":
     s1 = Settings.Setting(h1, 1)
     s2 = Settings.Setting(h1, 2)
     
-    alls = Settings.AllSettings()
-    alls['h1'] = h1
-    alls['h2'] = h2
-
-    print(alls['h1'])
-
+  
     b = Board()
     b['111'].set_as_X()
     #print(b[111].value)
@@ -305,7 +334,17 @@ if __name__ == "__main__":
     #lv = b.lines_info('111')
     #lv = b._Board__lines_info(111)
     #pprint(lv)
-    print(b._Board__score(111))
+    
+    #print(b._Board__score(111))
 
-    print(113 in b)
+    #print(113 in b)
+
+    #print(b)
+    #b.display_term()
+    print(*b)
+
+    #i = b.iter_rlc()
+
+    for i in b.cells_rlc():
+        print(i.position, end=' ')
     

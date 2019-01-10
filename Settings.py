@@ -27,7 +27,7 @@ class Setting:
         if self.is_interactive:
             s = "Interactive"
         else:
-            s = "D=" + str(Setting.MAX_DEPTH) + ":"
+            s = "D=" + str(self.MAX_DEPTH) + ":"
             for key, value in self.heuristics.items():
                 s += ":" + key + "=" + str(value)
         return s
@@ -53,7 +53,7 @@ class Setting:
         # check that heuristics is a dictionary
         if isinstance(value, abc.Mapping):
             # check that heuristics has the right keys
-            if value.keys() == Setting.HEURISITC_KEYS:
+            if value.keys() == self.HEURISITC_KEYS:
                 # check that heuristics has numeric values
                 if all(isinstance(val, numbers.Real) for val in value.values()):
                     self._heuristics = value
@@ -64,8 +64,8 @@ class Setting:
                           f'with non-numeric values are {non_numeric_keys}.'
                     raise TypeError(msg)
             else:
-                missing_keys = Setting.HEURISITC_KEYS - value.keys()
-                extra_keys = value.keys() - Setting.HEURISITC_KEYS           
+                missing_keys = self.HEURISITC_KEYS - value.keys()
+                extra_keys = value.keys() - self.HEURISITC_KEYS           
                 msg = f'heuristics keys are not same. Missing keys ' \
                       f'are {missing_keys}. Extra keys are {extra_keys}.'
                 raise ValueError(msg)
@@ -83,10 +83,10 @@ class Setting:
             return
 
         if isinstance(value, numbers.Integral):
-            if value >= 1 and value <= Setting.MAX_DEPTH:
+            if value >= 1 and value <= self.MAX_DEPTH:
                 self._depth = value
             else:
-                msg = f'depth must be between 1 and {Setting.MAX_DEPTH} ' \
+                msg = f'depth must be between 1 and {self.MAX_DEPTH} ' \
                       f'inclusively.'
                 raise ValueError(msg)
         else:

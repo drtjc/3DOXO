@@ -2,6 +2,8 @@
 # ADD TYPE ANNOTATIONS AT SOME POINT
 # add doc strings?
 # add custom exceptions
+# add memoization ???
+# make size / dim a variables and calc LINES etc automatically
 
 class OXO_3D:
 
