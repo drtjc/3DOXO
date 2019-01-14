@@ -1,28 +1,34 @@
 import numpy as np
+import itertools as it
 from pprint import pprint
-import itertools
 from scipy.special import comb
 
-def slice_planes(arr, axes, inds):
+def slice_plane(arr, axes, inds):
+    if len(axes) != len(inds):
+        raise ValueError("axes and inds must be of the same length")
+
     sl = [slice(None)] * arr.ndim    
     try:
         for axis, ind in zip(axes, inds):
             sl[axis] = ind
-    except:
+    except: # axes and inds contain only 1 value
         sl[axes] = inds
     return arr[tuple(sl)]
 
-def powerset(iterable):
-    "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
-    s = list(iterable)
-    return itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(len(s) + 1))
 
 
-size = 9
+
+
+
+
+
+size = 3
 dim = 3
 
 arr = np.arange(size ** dim, dtype = int).reshape([size] * dim)
 #arr = np.zeros([size] * dim, int)
+
+
 
 
 def lm(s, d):
@@ -31,38 +37,43 @@ def lm(s, d):
         l += comb(d, i, True) * (s ** (d-i)) * (2 ** (i - 1)) 
     return l
 
-# sum of: num ways of selecting i dimensions x size ^ remaining dimension
-#  * number of corners for (i-1)-cube i.e. side 
 
-#print(list(powerset(range(dim))))
+def diagonals(arr): 
+    diag = []
     
-for i in range(dim): # i is how many dimensions the line is in
-    for j in itertools.combinations(range(dim), r = i + 1):
-        # for all dimensions that don't appear, they can take on all values
-        diff = set(range(dim))  - set(j)
-        pprint(diff)
-        #  2 ** i lines to get for size ** (d - i) other inds
-        # 
+    def diagonal(arr):
+        if arr.ndim == 1:
+            diag.append(arr)
+            return diag
+        else:
+            diagonal(arr.diagonal())
+            diagonal(np.flip(arr, 0).diagonal())
 
-            
+    diagonal(arr)
+    return diag    
 
 
-# print(lm(size, dim))
+def lines(arr, flatten = True):
+    lines = []
+    # loop over the numbers of dimensions of the plane in which the line exists
+    for i in range(dim): 
+        # loops over all planes of i dimensions
+        for j in it.combinations(range(dim), r = i + 1): 
+            # the other dimensions can assume any position from a combination of all positions
+            for position in it.product(range(size), repeat = dim - i - 1):
+                # take a slice in plane j given position
+                sl = slice_plane(arr, set(range(dim)) - set(j), position)
+                # get all possible lines from slice
+                diags = diagonals(sl)
+                lines.extend(diags) if flatten else lines.append(diags) 
+    return lines
 
-lines = []
-# 1d
-for axes in itertools.combinations(range(dim), dim - 1): 
-    for inds in itertools.product(range(size), repeat = 2): 
-        lines.append(slice_planes(arr, axes, inds))
-# 2d
-for axis in range(dim):
-    for ind in range(size):
-        lines.append(slice_planes(arr, axis, ind).diagonal())
-        lines.append(np.flip(slice_planes(arr, axis, ind), 1).diagonal())
-# 3d
-lines.append(arr.diagonal().diagonal())
-lines.append(np.flip(arr.diagonal(), 0).diagonal())
-lines.append(np.flip(arr, (1, 2)).diagonal().diagonal())
-lines.append(np.flip(np.flip(arr, (1, 2)).diagonal(), 0).diagonal())
 
-# print(len(lines))
+arr[0,0,0] = 999
+l = lines(arr)
+pprint(l)
+print(arr)
+pprint(l)
+
+#print(lm(size, dim))
+
