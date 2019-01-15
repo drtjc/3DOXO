@@ -22,7 +22,7 @@ def slice_plane(arr, axes, inds):
 
 
 
-size = 3
+size = 4
 dim = 3
 
 arr = np.arange(size ** dim, dtype = int).reshape([size] * dim)
@@ -38,23 +38,51 @@ def lm(s, d):
     return l
 
 
-def diagonals(arr): 
-    diag = []
-    
-    def diagonal(arr):
-        if arr.ndim == 1:
-            diag.append(arr)
-            return diag
-        else:
-            diagonal(arr.diagonal())
-            diagonal(np.flip(arr, 0).diagonal())
 
-    diagonal(arr)
-    return diag    
+
+def get_diagonals():  
+    """ Returns a function that calculates the diagonals of an array. 
+    The returned function has the following structure:
+
+    Parameters
+    ----------
+    arr : a numpy ndarray
+
+    Returns
+    -------
+    List of ndarray views of the diagonals of the input array.
+
+    Example usage
+    -------------
+
+
+    Notes
+    -----
+    Let *d* be the the number of dimension of the input array.
+    The number of corners is 2^d and hence the number of diagonals is 2^d / 2 = 2^(d-1).
+
+    All diagonals exist is the same number of dimensions as the input array
+    """
+
+    diags = []
+    
+    def diagonals(arr):
+        if arr.ndim == 1:
+            diags.append(arr)
+        else:
+            diagonals(arr.diagonal())
+            diagonals(np.flip(arr, 0).diagonal())
+        return diags
+
+    return diagonals
+
+
 
 
 def lines(arr, flatten = True):
     lines = []
+    diagonals = get_diagonals()
+
     # loop over the numbers of dimensions of the plane in which the line exists
     for i in range(dim): 
         # loops over all planes of i dimensions
@@ -69,11 +97,11 @@ def lines(arr, flatten = True):
     return lines
 
 
-arr[0,0,0] = 999
+#arr[0,0,0] = 999
 l = lines(arr)
-pprint(l)
-print(arr)
-pprint(l)
+#pprint(l)
+#print(arr)
+#pprint(l)
 
 #print(lm(size, dim))
 
