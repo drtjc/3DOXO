@@ -25,8 +25,8 @@ def slice_plane(arr, axes, inds):
 
 
 
-size = 4
-dim = 3
+size = 5
+dim = 4
 
 arr = np.arange(size ** dim, dtype = int).reshape([size] * dim)
 #arr = np.zeros([size] * dim, int)
@@ -43,7 +43,7 @@ def lm(s, d):
 
 
 
-def get_diagonals() -> Callable[[numpy.ndarray], List[numpy.ndarray]]:
+def get_diagonals() -> Callable[[np.ndarray], List[np.ndarray]]:
     """ Returns a function that calculates the diagonals of an array. 
     The returned function has the following structure:
 
@@ -79,16 +79,42 @@ def get_diagonals() -> Callable[[numpy.ndarray], List[numpy.ndarray]]:
             [6, 7]]])
     >>> diagonals = get_diagonals()
     >>> diags = diagonals(arr)
+
+    ###TJC but can't call diagonals again as list is not empty i.e maintains state
+
     >>> diags
     [array([0, 7]), array([1, 6]), array([4, 3]), array([5, 2])]
     >>> arr[0, 0, 0] = 99
     >>> diags
     [array([99,  7]), array([1, 6]), array([4, 3]), array([5, 2])]
     """
-
+    
+    # create list to store diagonals
     diags = []
     
-    def diagonals(arr: numpy.ndarray) -> List[numpy.ndarray]:
+    # the diagonals function is recursive. How it works is best shown by example:
+    # 1d: arr = [0, 1] then the diagonal is also [0, 1].
+    
+    # 2d: arr = [[0, 1],
+    #            [2, 3]]
+    # The numpy diagonal method gives the main diagonal = [0, 3], a 1d array
+    # which is recursively passed to the diagonals function.
+    # To get the opposite diagonal we first use the numpy flip function to
+    # reverse the order of the elements along the given dimension, 0 in this case.
+    # This gives [[2, 3],
+    #              0, 1]]
+    # The numpy diagonal method gives the main diagonal = [2, 1], a 2d array
+    # which is recursively passed to the diagonals function.
+
+    # 3d: arr = [[[0, 1],
+    #             [2, 3]],
+    #            [[4, 5],
+    #             [6, 7]]]
+    #
+
+    # 4d: 
+
+    def diagonals(arr: np.ndarray) -> List[np.ndarray]:
         if arr.ndim == 1:
             diags.append(arr)
         else:
@@ -99,9 +125,10 @@ def get_diagonals() -> Callable[[numpy.ndarray], List[numpy.ndarray]]:
     return diagonals
 
 
-def lines(arr: numpy.ndarray, flatten: bool = True) -> Union[List[numpy.ndarray], List[List[numpy.ndarray]]]: 
+
+
+def lines(arr: np.ndarray, flatten: bool = True) -> Union[List[np.ndarray], List[List[np.ndarray]]]: 
     lines = [] # list of ndarray or list of list of ndarrays
-    diagonals = get_diagonals()
 
     # loop over the numbers of dimensions of the plane in which the line exists
     for i in range(dim): 
@@ -112,21 +139,23 @@ def lines(arr: numpy.ndarray, flatten: bool = True) -> Union[List[numpy.ndarray]
                 # take a slice in plane j given position
                 sl = slice_plane(arr, set(range(dim)) - set(j), position)
                 # get all possible lines from slice
-                diags = diagonals(sl)
+                diags = get_diagonals()(sl)
                 lines.extend(diags) if flatten else lines.append(diags) 
     return lines
 
 
 
 
-
-#arr[0,0,0] = 999
-l = lines(arr)
-#pprint(l)
 #print(arr)
+#arr[0,0,0] = 999
+l = lines(arr, True)
+pprint(len(l))
+#tt = get_diagonals()(arr)
+#print(tt)
+
 #pprint(l)
 
-#print(lm(size, dim))
+print(lm(size, dim))
 
 #if __name__ == "__main__":
 #    import doctest

@@ -1,7 +1,7 @@
 from typing import Sequence
 
 def sadd(s: str) -> str:
-    t : Sequence[int] = (1, 2)
+    t : Sequence[int] = ("1", 2)
     print(s + s)
     return "v"
 
