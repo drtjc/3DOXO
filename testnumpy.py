@@ -1,7 +1,7 @@
 import numpy as np
 import itertools as it
 from scipy.special import comb
-from typing import List, Callable, Union, Iterable
+from typing import List, Callable, Union, Iterable, Tuple
 
 from pprint import pprint
 
@@ -251,7 +251,7 @@ def get_diagonals() -> Callable[[np.ndarray], List[np.ndarray]]:
     return diagonals
 
 
-def lines(arr: np.ndarray, flatten: bool = True) -> Union[List[np.ndarray], List[List[np.ndarray]]]: 
+def lines(arr: np.ndarray, flatten: bool = True) -> Tuple[Union[List[np.ndarray], List[List[np.ndarray]]], int]: 
     """ Returns the lines, including diagonals, in an array
 
     Parameters
@@ -269,9 +269,11 @@ def lines(arr: np.ndarray, flatten: bool = True) -> Union[List[np.ndarray], List
     Returns
     -------
     Union[List[np.ndarray], List[List[np.ndarray]] :
-            A list of numpy.ndarray views of the lines in `arr`.
-            The `argument` determines if the list is flat or sublisted by 
-            the dimensional extent of the lines.
+        A list of numpy.ndarray views of the lines in `arr`.
+        The `argument` determines if the list is flat or sublisted by 
+        the dimensional extent of the lines.
+    int :
+        The number of lines. 
             
     Raises
     ------
