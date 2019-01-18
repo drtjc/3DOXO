@@ -2,14 +2,14 @@ import numpy as np
 import itertools as it
 from scipy.special import comb
 
-# imports for type annotationa
+# imports for type annotations
 from typing import List, Callable, Union, Iterable, Tuple
 
 from pprint import pprint
 
 
-# enfore keyword usage with * as first parameter
-def num_lines(*, dim: int, size: int) -> int:
+
+def num_lines(dim: int, size: int) -> int:
     """ Calculates the number of lines, including diagonals, in a hypercube.  
 
     Parameters
@@ -253,7 +253,8 @@ def get_diagonals() -> Callable[[np.ndarray], List[np.ndarray]]:
     return diagonals
 
 
-def lines(arr: np.ndarray, flatten: bool = True) -> Tuple[Union[List[np.ndarray], List[List[np.ndarray]]], int]: 
+def lines(arr: np.ndarray, flatten: bool = True) -> \
+          Tuple[Union[List[np.ndarray], List[List[np.ndarray]]], int]: 
     """ Returns the lines, including diagonals, in an array
 
     Parameters
@@ -321,14 +322,18 @@ def lines(arr: np.ndarray, flatten: bool = True) -> Tuple[Union[List[np.ndarray]
     5
     """
     
+    # The notes section for the function num_lines provides a sketch of a 
+    # constructive proof for the number of lines in a hypercube. This has
+    # been used to implement this function. 
+
     dim = arr.ndim
     size = arr.shape[0]
     lines = []
     count = 0
 
-    # loop over the numbers of dimensions of the plane in which the line exists
+    # loop over the numbers of dimensions in which the line exists
     for i in range(dim): 
-        # loops over all planes of i dimensions
+        # loop over all possible combinations of i-dimensional hypercubes
         for j in it.combinations(range(dim), r = i + 1): 
             # the other dimensions can assume any position from a combination of all positions
             for position in it.product(range(size), repeat = dim - i - 1):
@@ -339,28 +344,64 @@ def lines(arr: np.ndarray, flatten: bool = True) -> Tuple[Union[List[np.ndarray]
                 count += len(diags)
                 lines.extend(diags) if flatten else lines.append(diags) 
     
-    assert count == num_lines(dim = dim, size = size)
+    assert count == num_lines(dim, size)
     return lines, count
 
 
+def lines_inds(dim: int, size: int, flatten: bool = True) -> \
+               Tuple[Union[List[Tuple[int]], List[List[Tuple[int]]]], int]: 
+
+    lines = []
+    count = 0
+
+    # loop over the numbers of dimensions in which the line exists
+    for i in range(dim): 
+        # loop over all possible combinations of i-dimensional hypercubes
+        for j in it.combinations(range(dim), r = i + 1): 
+            # the other dimensions can assume any position from a combination of all positions
+            for position in it.product(range(size), repeat = dim - i - 1):
+                # take a slice in plane j given position
+                # sl = slice_plane(arr, set(range(dim)) - set(j), position)
+                # get all possible lines from slice
+                # diags = get_diagonals()(sl)
+                # count += len(diags)
+                # lines.extend(diags) if flatten else lines.append(diags)
+                pass
+    
+    assert count == num_lines(dim, size)
+    return lines, count
+
+def corners(dim: int, size: int):
+    
+    # e.g. if 2 dimension and size = 3
+    # 1,1 : 3,3
+    # 1,3 : 3,1
+    # 3,1 : 1,3
+    # 3,3 : 1,1
+
+    # first of all get all dim length products in [0, size - 1]
+    ll = it.combinations([0] * dim + [size - 1] * dim, r = dim)
+    #print(ll)
+    print(set(list(ll)))
+    return None
 
 
-dim = 2
-size = 2
+dim = 3
+size = 4
 
 
 arr = np.arange(size ** dim, dtype = int).reshape([size] * dim)
 #arr = np.zeros([size] * dim, int)
 
+corners(dim, size)
 
 
-
-print(arr)
+#print(arr)
 #arr[0,0,0] = 999
-l, c = lines(arr, True)
-print(l)
-pprint(len(l))
-print(c)
+#l, c = lines(arr, True)
+#print(l)
+#pprint(len(l))
+#print(c)
 #tt = get_diagonals()(arr)
 #print(tt)
 
@@ -368,7 +409,7 @@ print(c)
 
 #pprint(l)
 
-print(num_lines(dim = dim, size = size))
+#print(num_lines(dim = dim, size = size))
 
 #if __name__ == "__main__":
 #    import doctest
