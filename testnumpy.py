@@ -348,6 +348,10 @@ def lines(arr: np.ndarray, flatten: bool = True) -> \
     return lines, count
 
 
+
+
+
+
 def lines_inds(dim: int, size: int, flatten: bool = True) -> \
                Tuple[Union[List[Tuple[int]], List[List[Tuple[int]]]], int]: 
 
@@ -356,44 +360,115 @@ def lines_inds(dim: int, size: int, flatten: bool = True) -> \
 
     # loop over the numbers of dimensions in which the line exists
     for i in range(dim): 
+        #print(f'i={i}')
+        
+        diagonals = diagonals_inds(i + 1, size)
+        #print(f'diagonals = {diagonals}')
+
         # loop over all possible combinations of i-dimensional hypercubes
-        for j in it.combinations(range(dim), r = i + 1): 
-            # the other dimensions can assume any position from a combination of all positions
-            for position in it.product(range(size), repeat = dim - i - 1):
-                # take a slice in plane j given position
-                # sl = slice_plane(arr, set(range(dim)) - set(j), position)
-                # get all possible lines from slice
-                # diags = get_diagonals()(sl)
-                # count += len(diags)
-                # lines.extend(diags) if flatten else lines.append(diags)
-                pass
+        for j in it.combinations(range(dim), r = i + 1):
+            #print(f'j={j}')
+            for diagonal in diagonals:
+                #print(f'diagonal = {diagonal}')
+                # the other dimensions can assume any position from a combination of all positions
+                for position in it.product(range(size), repeat = dim - i - 1):
+                    #print(f'position = {position}')
+               
+                    # these are the other dimension
+                    od = set(range(dim)) - set(j)
+                    
+                    # for each cell in diagonal
+                    for c in diagonal:
+                        #print(f'c = {c}')
+                        #print(f'od = {od}')
+                        #print(f'position = {position}')
+                        t = insert_into_tuple(c, od, position)
+                        #print(t)
+                        lines.append(t)
+                        # insert position into the other dimensions
+
+                    # take a slice in plane j given position
+                    # sl = slice_plane(arr, set(range(dim)) - set(j), position)
+                    # get all possible lines from slice
+                    # diags = get_diagonals()(sl)
+                    # count += len(diags)
+                    # lines.extend(diags) if flatten else lines.append(diags)
     
-    assert count == num_lines(dim, size)
+    #assert count == num_lines(dim, size)
     return lines, count
 
-def corners(dim: int, size: int):
+
+def insert_into_tuple(tup, pos, val):
+    tl = list(tup)
+
+    try:
+        # first assume pos and val are iterable and not single integers
+        if len(pos) != len(val):
+            raise ValueError("pos and val must be of the same length")
+        
+        if len(pos) == 0:
+            return tup
+
+        stl = list(zip(*sorted(zip(pos, val))))
+        #print(f'stl = {stl}')
+        for p, v in zip(stl[0], stl[1]):
+            tl.insert(p, v)
+    except: 
+        # perhaps pos and cal are integers
+        tl.insert(pos, val)
+
+    return tuple(tl)
+
+
+
+
+
+
+
+
+
+
+
+def diagonals_inds(dim: int, size: int):
     
+
     # e.g. if 2 dimension and size = 3
     # 1,1 : 3,3
     # 1,3 : 3,1
     # 3,1 : 1,3
     # 3,3 : 1,1
 
-    # first of all get all dim length products in [0, size - 1]
-    ll = it.combinations([0] * dim + [size - 1] * dim, r = dim)
-    #print(ll)
-    print(set(list(ll)))
-    return None
+    # get a list of all corners that with 0 index in first dimension
+    corners_all = it.product([0, size - 1], repeat = dim)
+    corners_0 = [corner for corner in corners_all if corner[0] == 0]
+    #print(f'corners_0 = {corners_0}')
+
+    diagonals = []
+    for corner in corners_0: 
+        diagonal = []
+        diagonal.append(corner) 
+        # add rest of diagonal
+        for i in range(1, size): 
+            tmp = tuple(c - i for c in corner)
+            #print(f'tmp = {tmp}')
+            inds = tuple(abs(t) for t in tmp)
+            diagonal.append(inds)
+        diagonals.append(diagonal)
+
+    return diagonals
 
 
-dim = 3
-size = 4
+dim = 2
+size = 3
 
 
 arr = np.arange(size ** dim, dtype = int).reshape([size] * dim)
 #arr = np.zeros([size] * dim, int)
 
-corners(dim, size)
+ll = lines_inds(dim, size)
+print(ll)
+print(len(ll[0]))
+
 
 
 #print(arr)
@@ -409,7 +484,7 @@ corners(dim, size)
 
 #pprint(l)
 
-#print(num_lines(dim = dim, size = size))
+print(num_lines(dim = dim, size = size))
 
 #if __name__ == "__main__":
 #    import doctest
