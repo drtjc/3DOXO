@@ -5,9 +5,10 @@
 import numpy as np
 import itertools as it
 from scipy.special import comb
+from collections import defaultdict
 
 # imports for type annotations
-from typing import List, Callable, Union, Iterable, Tuple, Any
+from typing import List, Callable, Union, Iterable, Tuple, Any, DefaultDict
 from pprint import pprint
 import helper as hp
 
@@ -198,7 +199,7 @@ def get_diagonals() -> Callable[[np.ndarray], List[np.ndarray]]:
     return diagonals
 
 
-def lines(arr: np.ndarray, flatten: bool = True) -> \
+def get_lines(arr: np.ndarray, flatten: bool = True) -> \
           Tuple[Union[List[np.ndarray], List[List[np.ndarray]]], int]: 
     """ Returns the lines, including diagonals, in an array
 
@@ -247,30 +248,26 @@ def lines(arr: np.ndarray, flatten: bool = True) -> \
     >>> arr
     array([[0, 1],
            [2, 3]])
-    >>> l, c = lines(arr)
-    >>> l
+    >>> lines, count = get_lines(arr)
+    >>> lines
     [array([0, 2]), array([1, 3]), array([0, 1]), array([2, 3]), array([0, 3]), array([2, 1])]
-    >>> c
+    >>> count
     6
-    >>> len(l)
+    >>> len(lines)
     6
     >>> arr[0, 0] = 99
-    >>> l
+    >>> lines
     [array([99,  2]), array([1, 3]), array([99,  1]), array([2, 3]), array([99,  3]), array([2, 1])]
     >>> arr[0, 0] = 0
-    >>> l, c = lines(arr, False)
-    >>> l
+    >>> lines, count = get_lines(arr, False)
+    >>> lines
     [[array([0, 2])], [array([1, 3])], [array([0, 1])], [array([2, 3])], [array([0, 3]), array([2, 1])]]
-    >>> c
+    >>> count
     6
-    >>> len(l)
+    >>> len(lines)
     5
     """
     
-    # The notes section for the function num_lines provides a sketch of a 
-    # constructive proof for the number of lines in a hypercube. This has
-    # been used to implement this function. 
-
     dim = arr.ndim
     size = arr.shape[0]
     lines = []
@@ -293,94 +290,106 @@ def lines(arr: np.ndarray, flatten: bool = True) -> \
     return lines, count
 
 
-def diagonals_inds(dim: int, size: int) -> List[Tuple]:
+def get_cells_lines(lines: List[np.ndarray], dim: int) -> \
+                    DefaultDict[Tuple[int], List[np.ndarray]]:
+    """ Returns the lines intersected by each cell in a hypercube
+
+    Parameters
+    ----------
+    lines : List[np.ndarray]
+        The first returned value from get_lines(arr) where arr is of the
+        form np.arange(size ** dim, dtype = int).reshape([size] * dim).
+        That is, arr is populated with the values 0,1,2,...,size^dim - 1.
+
+    dim : int 
+        The dimension of the array (hypercube) that was used to
+        generate the `lines` parameter.
+
+    Returns
+    -------
+    DefaultDict[Tuple[int], List[np.ndarray]] :
+        A dictionary with keys equal to possible cell position of the
+        hypercube represented as a tuple. For each cell key, the value is 
+        a list of numpy.ndarray views that are lines containing the cell.
+            
+    See Also
+    --------
+    get_lines
+
+    Notes
+    -----
+    The implementation of this function uses np.unravel_index, and relies
+    uopn the lines parameter being generated from an array populated with
+    values 0,1,2,...
+ 
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from pprint import pprint
+    >>> arr = np.arange(4).reshape(2, 2)
+    >>> arr
+    array([[0, 1],
+           [2, 3]])
+    >>> lines, _ = get_lines(arr)
+    >>> lines
+    [array([0, 2]), array([1, 3]), array([0, 1]), array([2, 3]), array([0, 3]), array([2, 1])]
+    >>> cells_lines = get_cells_lines(lines, dim = 2)
+    >>> pprint(cells_lines) #doctest: +NORMALIZE_WHITESPACE
+    defaultdict(<class 'list'>,
+               {(0, 0): [array([0, 2]), array([0, 1]), array([0, 3])],
+                (0, 1): [array([1, 3]), array([0, 1]), array([2, 1])],
+                (1, 0): [array([0, 2]), array([2, 3]), array([2, 1])],
+                (1, 1): [array([1, 3]), array([2, 3]), array([0, 3])]})
+    >>> arr[0, 0] = 99
+    >>> pprint(cells_lines) #doctest: +NORMALIZE_WHITESPACE
+    defaultdict(<class 'list'>,
+                {(0, 0): [array([99,  2]), array([99,  1]), array([99,  3])],
+                (0, 1): [array([1, 3]), array([99,  1]), array([2, 1])],
+                (1, 0): [array([99,  2]), array([2, 3]), array([2, 1])],
+                (1, 1): [array([1, 3]), array([2, 3]), array([99,  3])]})  
+    """
     
+    size = lines[0].size
+    shape = [size] * dim
+    cells_lines = defaultdict(list)
 
-    # e.g. if 2 dimension and size = 3
-    # 1,1 : 3,3
-    # 1,3 : 3,1
-    # 3,1 : 1,3
-    # 3,3 : 1,1
-
-    # get a list of all corners that with 0 index in first dimension
-    corners_all = it.product([0, size - 1], repeat = dim)
-    corners_0 = [corner for corner in corners_all if corner[0] == 0]
-
-    diagonals = []
-    for corner in corners_0: 
-        diagonal = []
-        diagonal.append(corner) 
-        # add rest of diagonal
-        for i in range(1, size): 
-            tmp = tuple(c - i for c in corner)
-            inds = tuple(abs(t) for t in tmp)
-            diagonal.append(inds)
-        diagonals.append(diagonal)
-
-    return diagonals
-
-
-
-
-
-def lines_inds(dim: int, size: int, flatten: bool = True) -> \
-               Tuple[Union[List[Tuple[int]], List[List[Tuple[int]]]], int]: 
-
-    lines = []
-    count = 0
-
-    # loop over the numbers of dimensions in which the line exists
-    for i in range(dim): 
-        
-        diagonals = diagonals_inds(i + 1, size)
-        
-        # loop over all possible combinations of i-dimensional hypercubes
-        for j in it.combinations(range(dim), r = i + 1):
-            for diagonal in diagonals:
-                # the other dimensions can assume any position from a combination of all positions
-                for position in it.product(range(size), repeat = dim - i - 1):
-               
-                    # these are the other dimension
-                    od = set(range(dim)) - set(j)
-                    
-                    # for each cell in diagonal
-                    diag_ext = []
-                    for c in diagonal:
-                        diag_ext.append(hp.insert_into_tuple(c, od, position))
-
-                    lines.append(diag_ext)
-                    #lines.extend(diag_ext) if flatten else lines.append(diag_ext)
-    
-    return lines, count
+    for line in lines:
+        for j in range(size):
+            cell_inds = np.unravel_index(line[j], shape)
+            cells_lines[cell_inds].append(line) 
+    return cells_lines
 
 
 
 
 
 
-dim = 3
-size = 3
+
+
+
+# do all as generator????
+
+
+
+
+
+
+
+dim = 2
+size = 2
 
 
 arr = np.arange(size ** dim, dtype = int).reshape([size] * dim)
 #arr = np.zeros([size] * dim, int)
 
-ll = lines_inds(dim, size)
-print(ll[0])
-print(len(ll[0]))
-
-print(ll[0][0][0])
-v = arr[(ll[0][0][1])]
-
-print(v)
-
-#print(unique(ll[0]))
 
 
-print(arr)
-#arr[0,0,0] = 999
-l, c = lines(arr, True)
+l, c = get_lines(arr, True)
 print(l)
+#print(l[0][1])
+
+li = get_lines_inds(l, dim)
+print(li)
 #pprint(len(l))
 #print(c)
 #tt = get_diagonals()(arr)
@@ -388,9 +397,21 @@ print(l)
 
 #print(len(set(l)))
 
-#pprint(l)
+pprint(arr)
 
-print(num_lines(dim = dim, size = size))
+tt = []
+tt.append(l[0])
+print(tt)
+#arr[0,0] = 99
+print(tt)
+
+cl = get_cells_lines(l, dim)
+pprint(cl)
+arr[0,0] = 99
+pprint(cl)
+
+
+#print(num_lines(dim = dim, size = size))
 
 #if __name__ == "__main__":
 #    import doctest
