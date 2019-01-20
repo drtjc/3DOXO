@@ -1,13 +1,15 @@
+""" ## TO DO
+
+"""
+
 import numpy as np
 import itertools as it
 from scipy.special import comb
 
 # imports for type annotations
-from typing import List, Callable, Union, Iterable, Tuple
-
+from typing import List, Callable, Union, Iterable, Tuple, Any
 from pprint import pprint
-
-
+import helper as hp
 
 def num_lines(dim: int, size: int) -> int:
     """ Calculates the number of lines, including diagonals, in a hypercube.  
@@ -80,63 +82,6 @@ def num_lines(dim: int, size: int) -> int:
     for i in range(1, dim + 1):
         count += comb(dim, i, True) * (size ** (dim - i)) * (2 ** (i - 1)) 
     return count
-
-
-def slice_plane(arr: np.ndarray, axes: Union[int, Iterable[int]], 
-                inds: Union[int, Iterable[int]]) -> np.ndarray:
-    """ Returns a slice of an array. 
-
-    Parameters
-    ----------
-    arr : numpy.ndarray
-        The array to be sliced
-    axes : Union[int, Iterable[int]]
-        The axes that are fixed
-    inds : Union[int, Iterable[int]]
-        The indices corresponding to the fixed axes
-
-    Returns
-    -------
-    numpy.ndarray:
-        A view of a slice of `arr`.
-
-    Raises
-    ------
-    ValueError
-        If length of `axes` is not equal to length of `inds`
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> arr = np.arange(8).reshape(2, 2, 2)
-    >>> arr
-    array([[[0, 1],
-            [2, 3]],
-    <BLANKLINE>
-           [[4, 5],
-            [6, 7]]])
-    >>> slice_plane(arr, 0, 0)
-    array([[0, 1],
-           [2, 3]])
-    >>> slice_plane(arr, (1, 2), (0, 0))
-    array([0, 4])
-    """
-
-    # create a list of slice objects, one for each dimension of the array
-    # Note: slice(None) is the same as ":". E.g. arr[:, 4] = arr[slice(none), 4)]
-    sl = [slice(None)] * arr.ndim    
-    try:
-        # first assume axes and inds are iterable and not single integers
-        if len(axes) != len(inds):
-            raise ValueError("axes and inds must be of the same length")
-
-        for axis, ind in zip(axes, inds):
-            sl[axis] = ind
-    except: 
-        # perhaps axes and inds are integers
-        sl[axes] = inds
-
-    return arr[tuple(sl)]
 
 
 def get_diagonals() -> Callable[[np.ndarray], List[np.ndarray]]:
@@ -338,7 +283,7 @@ def lines(arr: np.ndarray, flatten: bool = True) -> \
             # the other dimensions can assume any position from a combination of all positions
             for position in it.product(range(size), repeat = dim - i - 1):
                 # take a slice in plane j given position
-                sl = slice_plane(arr, set(range(dim)) - set(j), position)
+                sl = hp.slice_ndarray(arr, set(range(dim)) - set(j), position)
                 # get all possible lines from slice
                 diags = get_diagonals()(sl)
                 count += len(diags)
@@ -347,6 +292,32 @@ def lines(arr: np.ndarray, flatten: bool = True) -> \
     assert count == num_lines(dim, size)
     return lines, count
 
+
+def diagonals_inds(dim: int, size: int) -> List[Tuple]:
+    
+
+    # e.g. if 2 dimension and size = 3
+    # 1,1 : 3,3
+    # 1,3 : 3,1
+    # 3,1 : 1,3
+    # 3,3 : 1,1
+
+    # get a list of all corners that with 0 index in first dimension
+    corners_all = it.product([0, size - 1], repeat = dim)
+    corners_0 = [corner for corner in corners_all if corner[0] == 0]
+
+    diagonals = []
+    for corner in corners_0: 
+        diagonal = []
+        diagonal.append(corner) 
+        # add rest of diagonal
+        for i in range(1, size): 
+            tmp = tuple(c - i for c in corner)
+            inds = tuple(abs(t) for t in tmp)
+            diagonal.append(inds)
+        diagonals.append(diagonal)
+
+    return diagonals
 
 
 
@@ -360,105 +331,34 @@ def lines_inds(dim: int, size: int, flatten: bool = True) -> \
 
     # loop over the numbers of dimensions in which the line exists
     for i in range(dim): 
-        #print(f'i={i}')
         
         diagonals = diagonals_inds(i + 1, size)
-        #print(f'diagonals = {diagonals}')
-
+        
         # loop over all possible combinations of i-dimensional hypercubes
         for j in it.combinations(range(dim), r = i + 1):
-            #print(f'j={j}')
             for diagonal in diagonals:
-                #print(f'diagonal = {diagonal}')
                 # the other dimensions can assume any position from a combination of all positions
                 for position in it.product(range(size), repeat = dim - i - 1):
-                    #print(f'position = {position}')
                
                     # these are the other dimension
                     od = set(range(dim)) - set(j)
                     
                     # for each cell in diagonal
+                    diag_ext = []
                     for c in diagonal:
-                        #print(f'c = {c}')
-                        #print(f'od = {od}')
-                        #print(f'position = {position}')
-                        t = insert_into_tuple(c, od, position)
-                        #print(t)
-                        lines.append(t)
-                        # insert position into the other dimensions
+                        diag_ext.append(hp.insert_into_tuple(c, od, position))
 
-                    # take a slice in plane j given position
-                    # sl = slice_plane(arr, set(range(dim)) - set(j), position)
-                    # get all possible lines from slice
-                    # diags = get_diagonals()(sl)
-                    # count += len(diags)
-                    # lines.extend(diags) if flatten else lines.append(diags)
+                    lines.append(diag_ext)
+                    #lines.extend(diag_ext) if flatten else lines.append(diag_ext)
     
-    #assert count == num_lines(dim, size)
     return lines, count
 
 
-def insert_into_tuple(tup, pos, val):
-    tl = list(tup)
-
-    try:
-        # first assume pos and val are iterable and not single integers
-        if len(pos) != len(val):
-            raise ValueError("pos and val must be of the same length")
-        
-        if len(pos) == 0:
-            return tup
-
-        stl = list(zip(*sorted(zip(pos, val))))
-        #print(f'stl = {stl}')
-        for p, v in zip(stl[0], stl[1]):
-            tl.insert(p, v)
-    except: 
-        # perhaps pos and cal are integers
-        tl.insert(pos, val)
-
-    return tuple(tl)
 
 
 
 
-
-
-
-
-
-
-
-def diagonals_inds(dim: int, size: int):
-    
-
-    # e.g. if 2 dimension and size = 3
-    # 1,1 : 3,3
-    # 1,3 : 3,1
-    # 3,1 : 1,3
-    # 3,3 : 1,1
-
-    # get a list of all corners that with 0 index in first dimension
-    corners_all = it.product([0, size - 1], repeat = dim)
-    corners_0 = [corner for corner in corners_all if corner[0] == 0]
-    #print(f'corners_0 = {corners_0}')
-
-    diagonals = []
-    for corner in corners_0: 
-        diagonal = []
-        diagonal.append(corner) 
-        # add rest of diagonal
-        for i in range(1, size): 
-            tmp = tuple(c - i for c in corner)
-            #print(f'tmp = {tmp}')
-            inds = tuple(abs(t) for t in tmp)
-            diagonal.append(inds)
-        diagonals.append(diagonal)
-
-    return diagonals
-
-
-dim = 2
+dim = 3
 size = 3
 
 
@@ -466,15 +366,21 @@ arr = np.arange(size ** dim, dtype = int).reshape([size] * dim)
 #arr = np.zeros([size] * dim, int)
 
 ll = lines_inds(dim, size)
-print(ll)
+print(ll[0])
 print(len(ll[0]))
 
+print(ll[0][0][0])
+v = arr[(ll[0][0][1])]
+
+print(v)
+
+#print(unique(ll[0]))
 
 
-#print(arr)
+print(arr)
 #arr[0,0,0] = 999
-#l, c = lines(arr, True)
-#print(l)
+l, c = lines(arr, True)
+print(l)
 #pprint(len(l))
 #print(c)
 #tt = get_diagonals()(arr)
