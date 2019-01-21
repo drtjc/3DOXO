@@ -1,6 +1,45 @@
-""" ## TO DO
-hypercube -> lines -> cells
-diagonals
+""" Provides functionalilty for working with celled hypercubes.
+
+Hypercubes are extensions of lines, squares and cubes into higher dimensions.
+Celled hypercubes can be thought as a grid or lattice structure.
+From this point, hypercubes is used to mean celled hypercubes.
+
+A celled hypercube can be described by its dimension and the number of
+cells in any dimension. We denote this as h(d, n).
+For example: h(2, 3) is a 3x3 grid; h(3, 4) is a 4x4x4 lattice.
+A hypercube of dimension d may also be referred to as a d-cube.
+
+A cell's position can be specified in coordinate style. 
+For example, given h(3, 4) then some valid coordinates are (1,1,1), 
+(2,1,3) and (4,4,4).
+
+The term m-agonal is a shortened function version of 
+"m-dimensional diagonal". So in 3-cube you would find a 1-agonal, 2-agonal
+and 3-agonal. A 1-agonal is customarily known as a row, column or pillar. 
+If 3 coordinates change in an 5-cube, while the others remain constant, this
+constitutes a 3-agonal.
+For a given h(d, n), 1 <= m <= n, a m-agonal always has n cells.
+
+The term line is used to refer to any m-agonal in general
+
+This module uses a numpy.ndarray to represent celled hypercubes.
+The following functions are provided:
+
+num_lines: 
+    Calculate the number of lines in a hypercube.
+
+get_diagonals:
+
+
+get_lines:
+
+
+get_cells_lines:
+
+
+slide_ndarray:
+
+
 """
 
 # do all as generator????
@@ -11,20 +50,18 @@ import itertools as it
 from scipy.special import comb #type: ignore
 from collections import defaultdict
 from typing import List, Callable, Union, Collection, Tuple, Any, DefaultDict
-Lines = List[np.ndarray]
+Lines = List[np.ndarray]  # call this Line
 ## change docstring to reflect alias, # choose name different from lines (since used for diagonals)
 
-def num_lines(dim: int, size: int) -> int:
-    """ Calculates the number of lines, including diagonals, in a hypercube.  
+def num_lines(dim: int, size: int) -> int:  # use d and n
+    """ Calculate the number of lines in a hypercube.  
 
     Parameters
     ----------
     dim : int
         The number of dimensions of the hypercube
-        The keyword `dim` must be specified
     size : int
         The size of the hypercube (number of cells in any dimension)
-        The keyword `size` must be specified
  
     Returns
     -------
