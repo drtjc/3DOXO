@@ -4,7 +4,6 @@ from collections import abc
 from typing import Generic, Dict, Optional, Type, TypeVar
 T = TypeVar('T', bound = 'Settings')
 
-
 class Settings:
 
     def __init__(self, interactive: bool, size: Optional[int], heuristics: Optional[Dict[str, int]], 

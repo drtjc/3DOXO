@@ -33,11 +33,11 @@ class Board():
 if __name__ == "__main__":
  
     dim = 2
-    size = 5
+    size = 2
     board = Board(dim, size)
 
     #print(board.num_lines)
-    #print(board.cells_lines)
+    print(board.cells_lines)
     #print(board.arr)
     #print(board.cells_lines)
 

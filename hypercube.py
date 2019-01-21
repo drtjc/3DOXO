@@ -6,12 +6,13 @@ diagonals
 # do all as generator????
 
 
-import numpy as np
+import numpy as np #type: ignore
 import itertools as it
-from scipy.special import comb
+from scipy.special import comb #type: ignore
 from collections import defaultdict
-from typing import List, Callable, Union, Iterable, Tuple, Any, DefaultDict
-
+from typing import List, Callable, Union, Collection, Tuple, Any, DefaultDict
+Lines = List[np.ndarray]
+## change docstring to reflect alias, # choose name different from lines (since used for diagonals)
 
 def num_lines(dim: int, size: int) -> int:
     """ Calculates the number of lines, including diagonals, in a hypercube.  
@@ -86,7 +87,7 @@ def num_lines(dim: int, size: int) -> int:
     return count
 
 
-def get_diagonals() -> Callable[[np.ndarray], List[np.ndarray]]:
+def get_diagonals() -> Callable[[np.ndarray], Lines]:
     """ Returns a function that calculates the diagonals of an array. 
     The returned function has the following structure:
 
@@ -189,7 +190,7 @@ def get_diagonals() -> Callable[[np.ndarray], List[np.ndarray]]:
     # The diagonals of this array are [4, 3] and [2, 5]
     # We now have all 4 diagonals of the original 3d arr.
 
-    def diagonals(arr: np.ndarray) -> List[np.ndarray]:
+    def diagonals(arr: np.ndarray) -> Lines:
         if arr.ndim == 1:
             diags.append(arr)
         else:
@@ -201,7 +202,7 @@ def get_diagonals() -> Callable[[np.ndarray], List[np.ndarray]]:
 
 
 def get_lines(arr: np.ndarray, flatten: bool = True) -> \
-          Tuple[Union[List[np.ndarray], List[List[np.ndarray]]], int]: 
+              Tuple[Union[Lines, List[Lines]], int]: 
     """ Returns the lines, including diagonals, in an array
 
     Parameters
@@ -230,6 +231,8 @@ def get_lines(arr: np.ndarray, flatten: bool = True) -> \
     AssertionError
         If number of lines returned by this function does not
         equal that calculated by the num_lines function.
+        THIS IS A CRITCAL ERROR THAT MEANS THIS FUNCTION HAS
+        A FLAWED IMPLEMENTATION.
     
     See Also
     --------
@@ -285,14 +288,17 @@ def get_lines(arr: np.ndarray, flatten: bool = True) -> \
                 # get all possible lines from slice
                 diags = get_diagonals()(sl)
                 count += len(diags)
-                lines.extend(diags) if flatten else lines.append(diags) 
+                if flatten:
+                    lines.extend(diags)
+                else:
+                    lines.append(diags)
     
     assert count == num_lines(dim, size)
     return lines, count
 
 
-def get_cells_lines(lines: List[np.ndarray], dim: int) -> \
-                    DefaultDict[Tuple[int], List[np.ndarray]]:
+def get_cells_lines(lines: Lines, dim: int) -> \
+                    DefaultDict[Tuple[int], Lines]:
     """ Returns the lines intersected by each cell in a hypercube
 
     Parameters
@@ -361,17 +367,17 @@ def get_cells_lines(lines: List[np.ndarray], dim: int) -> \
     return cells_lines
 
 
-def slice_ndarray(arr: np.ndarray, axes: Union[int, Iterable[int]], 
-                inds: Union[int, Iterable[int]]) -> np.ndarray:
+def slice_ndarray(arr: np.ndarray, axes: Collection[int], 
+                inds: Collection[int]) -> np.ndarray:
     """ Returns a slice of an array. 
 
     Parameters
     ----------
     arr : numpy.ndarray
         The array to be sliced
-    axes : Union[int, Iterable[int]]
+    axes : Iterable[int]
         The axes that are fixed
-    inds : Union[int, Iterable[int]]
+    inds : Iterable[int]
         The indices corresponding to the fixed axes
 
     Returns
@@ -394,7 +400,7 @@ def slice_ndarray(arr: np.ndarray, axes: Union[int, Iterable[int]],
     <BLANKLINE>
            [[4, 5],
             [6, 7]]])
-    >>> slice_ndarray(arr, 0, 0)
+    >>> slice_ndarray(arr, (0,), (0,))
     array([[0, 1],
            [2, 3]])
     >>> slice_ndarray(arr, (1, 2), (0, 0))
@@ -403,19 +409,13 @@ def slice_ndarray(arr: np.ndarray, axes: Union[int, Iterable[int]],
 
     # create a list of slice objects, one for each dimension of the array
     # Note: slice(None) is the same as ":". E.g. arr[:, 4] = arr[slice(none), 4)]
-    sl = [slice(None)] * arr.ndim    
-    try:
-        # first assume axes and inds are iterable and not single integers
-        if len(axes) != len(inds):
-            raise ValueError("axes and inds must be of the same length")
-
-        for axis, ind in zip(axes, inds):
-            sl[axis] = ind
-    except: 
-        # perhaps axes and inds are integers
-        print("here")
-        sl[axes] = inds
-
+    sl: List[Union[slice, int]] = [slice(None)] * arr.ndim    
+    if len(axes) != len(inds):
+        raise ValueError("axes and inds must be of the same length")
+    
+    for axis, ind in zip(axes, inds):
+        sl[axis] = ind
+    
     return arr[tuple(sl)]
 
 
