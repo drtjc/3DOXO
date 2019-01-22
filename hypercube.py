@@ -23,23 +23,6 @@ For a given h(d, n), 1 <= m <= n, a m-agonal always has n cells.
 The term line is used to refer to any m-agonal in general
 
 This module uses a numpy.ndarray to represent celled hypercubes.
-The following functions are provided:
-
-num_lines: 
-    Calculate the number of lines in a hypercube.
-
-get_diagonals:
-
-
-get_lines:
-
-
-get_cells_lines:
-
-
-slide_ndarray:
-
-
 """
 
 # do all as generator????
@@ -50,6 +33,8 @@ import itertools as it
 from scipy.special import comb #type: ignore
 from collections import defaultdict
 from typing import List, Callable, Union, Collection, Tuple, Any, DefaultDict
+
+Line = np.ndarray
 Lines = List[np.ndarray]  # call this Line
 ## change docstring to reflect alias, # choose name different from lines (since used for diagonals)
 
