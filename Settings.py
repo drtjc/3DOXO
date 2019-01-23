@@ -6,17 +6,17 @@ T = TypeVar('T', bound = 'Settings')
 
 class Settings:
 
-    def __init__(self, interactive: bool, size: Optional[int], heuristics: Optional[Dict[str, int]], 
+    def __init__(self, interactive: bool, n: Optional[int], heuristics: Optional[Dict[str, int]], 
                  depth: Optional[int]) -> None: 
         
         self.interactive = interactive
-        self.size = size
+        self.n = n
 
         self.heuristics = heuristics
         self.HEURISTIC_KEYS = None
         if heuristics is not None:
-            self.HEURISTIC_KEYS = frozenset(['W' + str(i) for i in range(1, size + 1)] + \
-                                            ['S' + str(i) for i in range(2, size + 1)])
+            self.HEURISTIC_KEYS = frozenset(['W' + str(i) for i in range(1, n + 1)] + \
+                                            ['S' + str(i) for i in range(2, n + 1)])
         self.depth = depth
 
     def __repr__(self) -> str:
@@ -33,9 +33,9 @@ class Settings:
         return cls(True, None, None, None)
 
     @classmethod
-    def as_heuristics(cls: Type[T], size: int, heuristics: Optional[Dict[str, int]] = None, 
+    def as_heuristics(cls: Type[T], n: int, heuristics: Optional[Dict[str, int]] = None, 
                       depth: Optional[int] = 1) -> T:
-        return cls(False, size, heuristics, depth)
+        return cls(False, n, heuristics, depth)
 
     @property
     def heuristics(self) -> Optional[Dict[str, int]]:
@@ -47,9 +47,11 @@ class Settings:
             self._heuristics = None
             return
 
-        # if interactive but no heuristics then build default ones
+        # if interactive but no heuristics then build default ones of form
+        # W1 = 1, S2 = 2, W2 = 4, S3 = 8, W3 = 16, ..., Si = 2^(2i-3), Wi = 2^(2i-2), ...
         if value is None:
-            self._heuristics = {'A' : 1, }
+            self._heuristics = {**{'W' + str(i): 2 ** (2 * i - 2) for i in range(1, self.n + 1)},
+                                **{'S' + str(i): 2 ** (2 * i - 3) for i in range(2, self.n + 1)}}
             return
 
         # check user-defined heuristics are valid
@@ -76,8 +78,9 @@ class Settings:
             raise TypeError("heuristics should be a mapping (dictionary).")
 
 
+
+
 if __name__ == "__main__":
-    s = Settings.as_interactive()
-    print(s)
-    t = Settings.as_heuristics(4, {'B': 1})
-    print(t)
+
+    s = Settings.as_heuristics(6)
+    print(s.heuristics)

@@ -25,21 +25,15 @@ class Board():
         except MemoryError:
             raise MemoryError("The board is too big to fit into available memory")
 
-
-    # int64 supports integers from -2^63 to 2^63 - 1
-    
-    #size of arr = n ** d * 64 / 8 bytes
-    # can use arr.nbytes    
-    # should lines and cells_lines be generators??
-
-
     def clear(self):
         self.arr.fill(0)
 
-    
     def memory(self) -> Memory:
         m = self.arr.nbytes, getsizeof(self.lines), getsizeof(self.cells_lines)
         return self.Memory(*m, sum(m))
+
+
+
 
 
 if __name__ == "__main__":
@@ -55,8 +49,3 @@ if __name__ == "__main__":
 
     print(board.memory())
 
-    hk = ['W' + str(i) for i in range(1, size + 1)] + \
-         ['S' + str(i) for i in range(2, size + 1)]
-
-    hkf = frozenset(hk)
-    print(hkf)

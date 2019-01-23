@@ -20,118 +20,124 @@ If 3 coordinates change in an 5-cube, while the others remain constant, this
 constitutes a 3-agonal.
 For a given h(d, n), 1 <= m <= n, a m-agonal always has n cells.
 
-The term line is used to refer to any m-agonal in general
+The term line is used to refer to any m-agonal in general.
+
+A cell apppears in multiple lines. 
 
 This module uses a numpy.ndarray to represent celled hypercubes.
+An array of d dimensions may be referred to as a d-array.
 """
 
+
 # do all as generator????
+# in cells_lines, check given dtype, that enough space exists for all the integers
+   # int64 supports integers from -2^63 to 2^63 - 1
 
 
+
+# numpy and scipy don't yet have type annotations
 import numpy as np #type: ignore
-import itertools as it
 from scipy.special import comb #type: ignore
+import itertools as it
 from collections import defaultdict
-from typing import List, Callable, Union, Collection, Tuple, Any, DefaultDict
+from typing import List, Callable, Union, Collection, Tuple, Any, DefaultDict, TypeVar
 
-Line = np.ndarray
-Lines = List[np.ndarray]  # call this Line
-## change docstring to reflect alias, # choose name different from lines (since used for diagonals)
+# type aliases
+Line = TypeVar('Line') # line should really be a 1d numpy array
+Lines = List[Line]  
 
-def num_lines(dim: int, size: int) -> int:  # use d and n
+def num_lines(d: int, n: int) -> int: 
     """ Calculate the number of lines in a hypercube.  
 
     Parameters
     ----------
-    dim : int
+    d : int
         The number of dimensions of the hypercube
-    size : int
-        The size of the hypercube (number of cells in any dimension)
+    n : int
+        The number of cells in any dimension
  
     Returns
     -------
     int:
-        The number of lines, including diagonals, in a hypercube.
+        The number of lines in a hypercube h(d, n).
 
     Notes
     -----
-    Let d be the number of dimensions and s the size.
-    Let n be the number of lines, including diagonals. Then
+    Consider a hypercube h(d, n).
+    Let l be the number of lines, then
 
-        n = sum{i=1, i=d} [ dCi * s^(d-i) * (2^i)/2 ]
+        l = sum{i=1, i=d} [ dCi * n^(d-i) * (2^i)/2 ]
 
     where dCi is 'd choose i'.
 
     Sketch of proof:
-    Let n_i be the number of lines that exist in exactly i dimensions.
-    For example, consider the following square:
+    Let l_i be the number of i-agonal lines (exist in exactly i dimensions).
+    For example, consider the following square (2-cube):
 
         [[0, 1],
          [2, 3]]
 
-    The lines that exist in one dimension are [0, 1], [2, 3], 
-    [0, 2] and [1, 3] and n_1 = 4.  
-
-    The lines that exist in two dimesions are [0, 3] and [1, 2] 
-    and n_2 = 2.
+    The 1-agonal lines are [0, 1], [2, 3], [0, 2] and [1, 3] and l_1 = 4.  
+    The 2-agonal lines are [0, 3] and [1, 2]  and l_2 = 2.
     
-    Hence n = n_1 + n_2 = 6
+    Hence l = l_1 + l_2 = 6
 
-    It is trivially true that the n is the sum of n_i, i.e.,
+    It is trivially true that the l is the sum of l_i, i.e.,
 
-        n = sum{i=1, i=d} n_i
+        l = sum{i=1, i=d} l_i
 
-    Next we show how n_i can be calculated.
+    Next we show how l_i can be calculated. Firstly, we argue
+    that the distinct number of h(i, n) is dCi * n^(d-i).
+    
     The number of ways of choosing i dimensions from d is dCi.
     For example if d=3 and i=2, then the 3 combinations of 
     2 dimensions (squares) are (1, 2), (1, 3) and (2, 3).
 
     The number of remaining dimensions is d-i, and the number of cells
-    in these dimensions is s^(d-i). Any cell could be selected extracting
-    an i-dimensional hypercube.
+    in these dimensions is n^(d-i). Any one of theses cells could be 
+    fixed relative to a given i-dimensional hypercube, h(i, n).
 
-    For any one of the possible combinations of i-dimensional
-    hypercubes, the number of corners is 2^i. A line has 2 corners,
-    a square 4, a cube 8, a tesseract 16, ...
-    Since a line connects 2 corners, the number of lines is (2^i)/2.
+    Hence the distinct number of h(i, n) is dCi * n^(d-i).
 
+    Finally, for any h(i, n), the number of i-agonal lines is (2^i)/2. 
+    This is because an i-cube has 2^i corners and a line has 2 corners.
+
+    Hence l_i = dCi * n^(d-i) * (2^i)/2 and thus:
+
+        l = sum{i=1, i=d} [ dCi * n^(d-i) * (2^i)/2 ]
+  
     Examples
     --------
-    >>> num_lines(dim = 2, size = 3)
+    >>> num_lines(2, 3)
     8
-    >>> num_lines(dim = 3, size = 4)
+    >>> num_lines(3, 4)
     76
     """
 
     count = 0
-    for i in range(1, dim + 1):
-        count += comb(dim, i, True) * (size ** (dim - i)) * (2 ** (i - 1)) 
+    for i in range(1, d + 1):
+        count += comb(d, i, True) * (n ** (d - i)) * (2 ** (i - 1)) 
     return count
 
 
-def get_diagonals() -> Callable[[np.ndarray], Lines]:
-    """ Returns a function that calculates the diagonals of an array. 
+def get_diagonals() -> Callable[[Line], Lines]:
+    """ Returns a function that calculates the d-agonals of a d-array. 
     The returned function has the following structure:
 
     Parameters
     ----------
     arr : numpy.ndarray
-        The array whose diagonals are to be calculated
+        A d-array whose d-agonals are to be calculated
 
     Returns
     -------
-    List[numpy.ndarray] :
-        A list of numpy.ndarray views of the diagonals of `arr`.
+    list :
+        A list of numpy.ndarray views of the d-gonals of `arr`.
 
     Notes
     -----
-    Let d be the number of dimensions of `arr`.
-    
-    The number of corners is of `arr` is 2^d - a line has 2 corners, 
-    a square 4, a cube 8, a tesseract 16, ...
-    
-    The number of diagonals is 2^d / 2 since two connecting 
-    corners form a line. 
+    The number of corners of `arr` is 2^d. The number of d-agonals 
+    is 2^d / 2 since two connecting corners form a line. 
 
     Examples
     --------
@@ -152,7 +158,7 @@ def get_diagonals() -> Callable[[np.ndarray], Lines]:
     [array([99,  7]), array([1, 6]), array([4, 3]), array([5, 2])]
 
     Note that the diagonals function returned by get_diagonals maintains
-    the list of digonals returned between invocations.
+    the list of diagonals returned between invocations.
     >>> arr = np.arange(2)
     >>> arr
     array([0, 1])
@@ -171,9 +177,6 @@ def get_diagonals() -> Callable[[np.ndarray], Lines]:
     >>> get_diagonals()(arr)
     [array([0, 1])]
     """
-    
-    # create list to store diagonals
-    diags = []
     
     # The diagonals function is recursive. How it works is best shown by example.
     # 1d: arr = [0, 1] then the diagonal is also [0, 1].
@@ -199,8 +202,8 @@ def get_diagonals() -> Callable[[np.ndarray], Lines]:
     #             [1, 7]]
     # Note that the diagonals of this array are [0, 7] and [6, 1] which are
     # retrieved by a recurive call to the diagonals function.
-    # We now have 2 of the 4 diagonals of the orginal 3d arr.
-    # To get the opposite diagonals we first use the numpy flip function which
+    # We now have 2 of the 4 3-agonals of the orginal 3d arr.
+    # To get the opposite 3-agonals we first use the numpy flip function which
     # gives
     #           [[[4, 5],
     #             [6, 7]],
@@ -210,8 +213,10 @@ def get_diagonals() -> Callable[[np.ndarray], Lines]:
     #            [[4, 2],
     #             [5, 3]]
     # The diagonals of this array are [4, 3] and [2, 5]
-    # We now have all 4 diagonals of the original 3d arr.
+    # We now have all 4 3-agonals of the original 3d arr.
 
+    diags = []
+    
     def diagonals(arr: np.ndarray) -> Lines:
         if arr.ndim == 1:
             diags.append(arr)
@@ -225,7 +230,7 @@ def get_diagonals() -> Callable[[np.ndarray], Lines]:
 
 def get_lines(arr: np.ndarray, flatten: bool = True) -> \
               Tuple[Union[Lines, List[Lines]], int]: 
-    """ Returns the lines, including diagonals, in an array
+    """ Returns the lines in an array
 
     Parameters
     ----------
@@ -234,17 +239,15 @@ def get_lines(arr: np.ndarray, flatten: bool = True) -> \
 
     flatten : bool, optional 
         Determines if the lines are returned as a flat list, or
-        nested list in which each sublist contains lines that exist
-        in the same number of dimension i.e, 1-dimensional lines,
-        2-dimensional lines, etc.
+        as a nested lists of i-agonals.
         A flat list is return by default.
 
     Returns
     -------
-    Union[List[np.ndarray], List[List[np.ndarray]] :
+    list :
         A list of numpy.ndarray views of the lines in `arr`.
-        The `argument` determines if the list is flat or sublisted by 
-        the dimensional extent of the lines.
+        The `flatten` arguments determines if the list is flat or 
+        nested listed of i-agonals
     int :
         The number of lines. 
             
@@ -294,19 +297,19 @@ def get_lines(arr: np.ndarray, flatten: bool = True) -> \
     5
     """
     
-    dim = arr.ndim
-    size = arr.shape[0]
+    d = arr.ndim
+    n = arr.shape[0]
     lines = []
     count = 0
 
-    # loop over the numbers of dimensions in which the line exists
-    for i in range(dim): 
-        # loop over all possible combinations of i-dimensional hypercubes
-        for j in it.combinations(range(dim), r = i + 1): 
-            # the other dimensions can assume any position from a combination of all positions
-            for position in it.product(range(size), repeat = dim - i - 1):
-                # take a slice in plane j given position
-                sl = slice_ndarray(arr, set(range(dim)) - set(j), position)
+    # loop over the numbers of dimensions
+    for i in range(d): 
+        # loop over all possible combinations of i dimensions
+        for i_comb in it.combinations(range(d), r = i + 1): 
+            # a cell could be in any position in the other dimensions
+            for position in it.product(range(n), repeat = d - i - 1):
+                # take a slice of i dimensions given position
+                sl = slice_ndarray(arr, set(range(d)) - set(i_comb), position)
                 # get all possible lines from slice
                 diags = get_diagonals()(sl)
                 count += len(diags)
@@ -315,7 +318,7 @@ def get_lines(arr: np.ndarray, flatten: bool = True) -> \
                 else:
                     lines.append(diags)
     
-    assert count == num_lines(dim, size)
+    assert count == num_lines(d, n)
     return lines, count
 
 
