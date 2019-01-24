@@ -22,29 +22,30 @@ For a given h(d, n), 1 <= m <= n, a m-agonal always has n cells.
 
 The term line is used to refer to any m-agonal in general.
 
-A cell apppears in multiple lines. 
+A cell apppears in multiple lines, which are refered to as the 
+scope of the cell.
+
+The combination of hypercube, lines and cell scopes is referred to
+as the structure of the hypercube.
 
 This module uses a numpy.ndarray to represent celled hypercubes.
 An array of d dimensions may be referred to as a d-array.
 """
 
 
-# do all as generator????
-# in cells_lines, check given dtype, that enough space exists for all the integers
-   # int64 supports integers from -2^63 to 2^63 - 1
-
-
-
 # numpy and scipy don't yet have type annotations
 import numpy as np #type: ignore
 from scipy.special import comb #type: ignore
 import itertools as it
-from collections import defaultdict
-from typing import List, Callable, Union, Collection, Tuple, Any, DefaultDict, TypeVar
+from collections import defaultdict, Counter as counter
+from typing import List, Callable, Union, Collection, Tuple, Any, DefaultDict, TypeVar, Counter, Dict
 
 # type aliases
 Line = TypeVar('Line') # line should really be a 1d numpy array
-Lines = List[Line]  
+Lines = List[Line]
+Cell = Tuple[int]
+Scopes = DefaultDict[Cell, Lines]  
+Structure = Tuple[np.ndarray, Lines, Scopes]
 
 def num_lines(d: int, n: int) -> int: 
     """ Calculate the number of lines in a hypercube.  
@@ -307,9 +308,9 @@ def get_lines(arr: np.ndarray, flatten: bool = True) -> \
         # loop over all possible combinations of i dimensions
         for i_comb in it.combinations(range(d), r = i + 1): 
             # a cell could be in any position in the other dimensions
-            for position in it.product(range(n), repeat = d - i - 1):
-                # take a slice of i dimensions given position
-                sl = slice_ndarray(arr, set(range(d)) - set(i_comb), position)
+            for cell in it.product(range(n), repeat = d - i - 1):
+                # take a slice of i dimensions given cell
+                sl = slice_ndarray(arr, set(range(d)) - set(i_comb), cell)
                 # get all possible lines from slice
                 diags = get_diagonals()(sl)
                 count += len(diags)
@@ -322,16 +323,15 @@ def get_lines(arr: np.ndarray, flatten: bool = True) -> \
     return lines, count
 
 
-def get_cells_lines(lines: Lines, dim: int) -> \
-                    DefaultDict[Tuple[int], Lines]:
-    """ Returns the lines intersected by each cell in a hypercube
+def get_scopes(lines: Lines, d: int) -> Scopes:
+    """ Calculate the scope of each cell in a hypercube
 
     Parameters
     ----------
-    lines : List[np.ndarray]
+    lines : list
         The first returned value from get_lines(arr) where arr is of the
-        form np.arange(size ** dim, dtype = int).reshape([size] * dim).
-        That is, arr is populated with the values 0,1,2,...,size^dim - 1.
+        form np.arange(n ** d, dtype = int64).reshape([n] * d).
+        That is, arr is populated with the values 0,1,2,...,n^d - 1.
 
     dim : int 
         The dimension of the array (hypercube) that was used to
@@ -339,10 +339,11 @@ def get_cells_lines(lines: Lines, dim: int) -> \
 
     Returns
     -------
-    DefaultDict[Tuple[int], List[np.ndarray]] :
-        A dictionary with keys equal to possible cell position of the
-        hypercube represented as a tuple. For each cell key, the value is 
-        a list of numpy.ndarray views that are lines containing the cell.
+    defaultdict :
+        A dictionary with keys equal to each cell of the hypercube 
+        (represented as a tuple). For each cell key, the value is cell's
+        scope - a list of numpy.ndarray views that are lines containing
+        the cell.
             
     See Also
     --------
@@ -365,15 +366,15 @@ def get_cells_lines(lines: Lines, dim: int) -> \
     >>> lines, _ = get_lines(arr)
     >>> lines
     [array([0, 2]), array([1, 3]), array([0, 1]), array([2, 3]), array([0, 3]), array([2, 1])]
-    >>> cells_lines = get_cells_lines(lines, dim = 2)
-    >>> pprint(cells_lines) #doctest: +NORMALIZE_WHITESPACE
+    >>> scopes = get_scopes(lines, dim = 2)
+    >>> pprint(scopes) #doctest: +NORMALIZE_WHITESPACE
     defaultdict(<class 'list'>,
                {(0, 0): [array([0, 2]), array([0, 1]), array([0, 3])],
                 (0, 1): [array([1, 3]), array([0, 1]), array([2, 1])],
                 (1, 0): [array([0, 2]), array([2, 3]), array([2, 1])],
                 (1, 1): [array([1, 3]), array([2, 3]), array([0, 3])]})
     >>> arr[0, 0] = 99
-    >>> pprint(cells_lines) #doctest: +NORMALIZE_WHITESPACE
+    >>> pprint(scopes) #doctest: +NORMALIZE_WHITESPACE
     defaultdict(<class 'list'>,
                 {(0, 0): [array([99,  2]), array([99,  1]), array([99,  3])],
                 (0, 1): [array([1, 3]), array([99,  1]), array([2, 1])],
@@ -381,15 +382,38 @@ def get_cells_lines(lines: Lines, dim: int) -> \
                 (1, 1): [array([1, 3]), array([2, 3]), array([99,  3])]})  
     """
     
-    size = lines[0].size
-    shape = [size] * dim
-    cells_lines: DefaultDict = defaultdict(list)
+    n = lines[0].size
+    shape = [n] * d
+    scopes: DefaultDict = defaultdict(list)
 
     for line in lines:
-        for j in range(size):
-            cell_inds = np.unravel_index(line[j], shape)
-            cells_lines[cell_inds].append(line) 
-    return cells_lines
+        for j in range(n):
+            cell = np.unravel_index(line[j], shape)
+            scopes[cell].append(line) 
+    return scopes
+
+
+def structure(d: int, n: int) -> Structure:
+    ## TO DO doc
+
+    # number of cells is n^d. If this greater than 2^31 then
+    # we use int64. This is because the the get_scopes function
+    # populates the arrays with values 0,1,2, ...
+    dtype = np.int64 if n ** d > 2 ** 31 else np.int32
+    arr = np.arange(n ** d, dtype = dtype).reshape([n] * d)
+    lines, _ = get_lines(arr)
+    scopes = get_scopes(lines, d)
+    arr.fill(0)
+    return (arr, lines, scopes)
+
+
+# calculate size of cell scopes
+def scopes_size(scopes: Scopes) -> Counter:
+    return counter([len(scope) for scope in scopes.values()])
+
+
+# calculate dict with keys = scope sizes and values = list of cells with scope of that size
+
 
 
 def slice_ndarray(arr: np.ndarray, axes: Collection[int], 

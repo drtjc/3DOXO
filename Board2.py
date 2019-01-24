@@ -9,27 +9,29 @@ import hypercube as hc
 
 
 
-class Board():
+class TicTacToe():
 
-    Memory = NamedTuple('Memory', [('arr', int), ('lines', int), ('cell_lines', int), ('total', int)]) 
+    Memory = NamedTuple('Memory', [('board', int), ('lines', int), ('scopes', int), ('total', int)]) 
 
     def __init__(self, d: int, n: int) -> None:
         try:
             self.d = d
             self.n = n
-            self.arr = np.arange(n ** d, dtype = np.int64).reshape([n] * d)
-            self.num_lines = hc.num_lines(d, n)
-            self.lines, _ = hc.get_lines(self.arr)
-            self.cells_lines = hc.get_cells_lines(self.lines, d)
-            self.clear()
+            
+            struct = hc.structure(d, n)
+            self.board = struct[0]
+            self.lines = struct[1]
+            self.num_lines = len(self.lines)
+            self.scopes = struct[2]
+
         except MemoryError:
             raise MemoryError("The board is too big to fit into available memory")
 
     def clear(self):
-        self.arr.fill(0)
+        self.board.fill(0)
 
     def memory(self) -> Memory:
-        m = self.arr.nbytes, getsizeof(self.lines), getsizeof(self.cells_lines)
+        m = self.board.nbytes, getsizeof(self.lines), getsizeof(self.scopes)
         return self.Memory(*m, sum(m))
 
 
@@ -38,14 +40,13 @@ class Board():
 
 if __name__ == "__main__":
  
-    dim = 3
-    size = 4
-    board = Board(dim, size)
+    dim = 2
+    size = 2
+    tictactoe = TicTacToe(dim, size)
 
-    print(board.num_lines)
-    #print(board.cells_lines)
-    #print(board.arr)
-    #print(board.cells_lines)
-
-    print(board.memory())
+    print(tictactoe.num_lines)
+ 
+    print(tictactoe.memory())
+#    print(tictactoe.board)
+    print(hc.scopes_size(tictactoe.scopes))
 
