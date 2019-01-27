@@ -366,20 +366,20 @@ def get_scopes(lines: Lines, d: int) -> Scopes:
     >>> lines, _ = get_lines(arr)
     >>> lines
     [array([0, 2]), array([1, 3]), array([0, 1]), array([2, 3]), array([0, 3]), array([2, 1])]
-    >>> scopes = get_scopes(lines, dim = 2)
+    >>> scopes = get_scopes(lines, 2)
     >>> pprint(scopes) #doctest: +NORMALIZE_WHITESPACE
     defaultdict(<class 'list'>,
-               {(0, 0): [array([0, 2]), array([0, 1]), array([0, 3])],
-                (0, 1): [array([1, 3]), array([0, 1]), array([2, 1])],
-                (1, 0): [array([0, 2]), array([2, 3]), array([2, 1])],
-                (1, 1): [array([1, 3]), array([2, 3]), array([0, 3])]})
+                {(0, 0): [array([0, 2]), array([0, 1]), array([0, 3])],
+                 (0, 1): [array([1, 3]), array([0, 1]), array([2, 1])],
+                 (1, 0): [array([0, 2]), array([2, 3]), array([2, 1])],
+                 (1, 1): [array([1, 3]), array([2, 3]), array([0, 3])]})
     >>> arr[0, 0] = 99
     >>> pprint(scopes) #doctest: +NORMALIZE_WHITESPACE
     defaultdict(<class 'list'>,
                 {(0, 0): [array([99,  2]), array([99,  1]), array([99,  3])],
-                (0, 1): [array([1, 3]), array([99,  1]), array([2, 1])],
-                (1, 0): [array([99,  2]), array([2, 3]), array([2, 1])],
-                (1, 1): [array([1, 3]), array([2, 3]), array([99,  3])]})  
+                 (0, 1): [array([1, 3]), array([99,  1]), array([2, 1])],
+                 (1, 0): [array([99,  2]), array([2, 3]), array([2, 1])],
+                 (1, 1): [array([1, 3]), array([2, 3]), array([99,  3])]})  
     """
     
     n = lines[0].size
@@ -394,7 +394,43 @@ def get_scopes(lines: Lines, d: int) -> Scopes:
 
 
 def structure(d: int, n: int) -> Structure:
-    ## TO DO doc
+    """ Return a celled hypercube, its lines, and the scopes of its cells.
+
+    Parameters
+    ----------
+    d : int
+        The number of dimensions of the hypercube
+    n : int
+        The number of cells in any dimension
+ 
+    Returns
+    -------
+    tuple :
+        A tuple containing the hypercube, its lines, and the scopes of
+        its cells.
+            
+    See Also
+    --------
+    get_lines
+    get_scopes
+ 
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from pprint import pprint
+    >>> struct = structure(2, 2) 
+    >>> struct[0]
+    array([[0, 0],
+           [0, 0]])
+    >>> struct[1]
+    [array([0, 0]), array([0, 0]), array([0, 0]), array([0, 0]), array([0, 0]), array([0, 0])]
+    >>> pprint(struct[2]) #doctest: +NORMALIZE_WHITESPACE
+    defaultdict(<class 'list'>,
+                {(0, 0): [array([0, 0]), array([0, 0]), array([0, 0])],
+                 (0, 1): [array([0, 0]), array([0, 0]), array([0, 0])],
+                 (1, 0): [array([0, 0]), array([0, 0]), array([0, 0])],
+                 (1, 1): [array([0, 0]), array([0, 0]), array([0, 0])]})
+    """
 
     # number of cells is n^d. If this greater than 2^31 then
     # we use int64. This is because the the get_scopes function
@@ -407,12 +443,71 @@ def structure(d: int, n: int) -> Structure:
     return (arr, lines, scopes)
 
 
-# calculate size of cell scopes
 def scopes_size(scopes: Scopes) -> Counter:
+    """ Calculate the different scope lengths.
+
+    Parameters
+    ----------
+    scopes : DefaultDict
+        Dictionary of cells (keys) and their scopes
+ 
+    Returns
+    -------
+    Counter :
+        Counter of scopes lengths (key) and their frequency (values).
+            
+    See Also
+    --------
+    get_scopes
+ 
+    Examples
+    --------
+    >>> import numpy as np
+    >>> scopes = structure(2, 3)[2] 
+    >>> scopes_size(scopes) == Counter({2: 4, 3: 4, 4: 1})
+    True
+    """
+    
     return counter([len(scope) for scope in scopes.values()])
 
 
 # calculate dict with keys = scope sizes and values = list of cells with scope of that size
+def scopes_size_cells(scopes: Scopes) -> DefaultDict[int, List[Cell]]:
+    """ Group cells by length of their scope.
+
+    Parameters
+    ----------
+    scopes : DefaultDict
+        Dictionary of cells (keys) and their scopes
+ 
+    Returns
+    -------
+    DefaultDict :
+        Dictonary of scopes lengths (key) and the list of cells with scopes of that length.
+            
+    See Also
+    --------
+    get_scopes
+ 
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from pprint import pprint
+    >>> scopes = structure(2, 3)[2] 
+    >>> pprint(scopes_size_cells(scopes))
+    defaultdict(<class 'list'>,
+                {2: [(1, 0), (0, 1), (2, 1), (1, 2)],
+                 3: [(0, 0), (2, 0), (0, 2), (2, 2)],
+                 4: [(1, 1)]})
+    """
+
+    scopes_size_cells: DefaultDict = defaultdict(list)
+    for cell, scope in scopes.items():
+        scopes_size_cells[len(scope)].append(cell)
+
+    return scopes_size_cells
+
+
 
 
 

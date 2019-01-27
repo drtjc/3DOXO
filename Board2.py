@@ -47,6 +47,8 @@ if __name__ == "__main__":
     print(tictactoe.num_lines)
  
     print(tictactoe.memory())
-#    print(tictactoe.board)
+    print(tictactoe.board)
+    print(tictactoe.scopes)
+    print(hc.scopes_size_cells(tictactoe.scopes))
     print(hc.scopes_size(tictactoe.scopes))
 
