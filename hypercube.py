@@ -471,7 +471,6 @@ def scopes_size(scopes: Scopes) -> Counter:
     return counter([len(scope) for scope in scopes.values()])
 
 
-# calculate dict with keys = scope sizes and values = list of cells with scope of that size
 def scopes_size_cells(scopes: Scopes) -> DefaultDict[int, List[Cell]]:
     """ Group cells by length of their scope.
 
@@ -506,9 +505,6 @@ def scopes_size_cells(scopes: Scopes) -> DefaultDict[int, List[Cell]]:
         scopes_size_cells[len(scope)].append(cell)
 
     return scopes_size_cells
-
-
-
 
 
 def slice_ndarray(arr: np.ndarray, axes: Collection[int], 
